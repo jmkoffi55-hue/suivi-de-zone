@@ -1,0 +1,3318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+<meta name="theme-color" content="#0a1f44">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<meta name="description" content="Suivi de Zone : gestion hors ligne des assemblées, membres, rencontres, âmes et finances.">
+<title>Suivi de Zone</title>
+<style>
+/* ==========================================================================
+   SUIVI DE ZONE — Design inspiré de « Dossier de Brisement des Liens »
+   Palette : navy / gold / paper
+   ========================================================================== */
+:root{
+  --navy:#0a1f44;
+  --navy-dark:#061530;
+  --gold:#c9a227;
+  --gold-light:#e8d28a;
+  --paper:#fdfcf8;
+  --paper-alt:#f6f3e8;
+  --line:#c9c2a8;
+  --text:#1c1c1c;
+  --muted:#6b6450;
+  --ok:#1b7a2e;
+  --warn:#b36b00;
+  --danger:#a00;
+  --bg:#e7e2d3;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{scroll-padding-top:80px;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:15px;
+  line-height:1.45;
+  -webkit-text-size-adjust:100%;
+  overflow-x:hidden;
+  transition:background .3s,color .3s;
+}
+body.dark{background:#1a1a1a;color:#e0e0e0;}
+body.dark .card{background:#252525;border-color:#444;}
+body.dark .section-title{color:#e8d28a;}
+body.dark input,body.dark textarea,body.dark select{background:#1a1a1a;color:#e0e0e0;border-color:#555;}
+body.dark table.grid-table th{background:#061530;}
+body.dark table.grid-table td{border-color:#444;}
+
+/* ===================== TOOLBAR ===================== */
+.toolbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--navy);color:var(--gold-light);
+  padding:10px 16px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);
+  font-family:Arial,sans-serif;
+  padding-top:calc(10px + env(safe-area-inset-top,0px));
+}
+.toolbar .brand{
+  display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto;
+}
+.toolbar .brand h1{
+  font-size:15px;margin:0;color:var(--gold);
+  font-family:Georgia,serif;letter-spacing:.4px;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.toolbar .brand small{
+  font-size:11px;color:#e8d28a;opacity:.85;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.toolbar .btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:none;}
+.btn{
+  background:var(--gold);color:var(--navy-dark);
+  border:none;padding:9px 14px;border-radius:5px;
+  font-weight:bold;font-size:13px;cursor:pointer;
+  font-family:Arial,sans-serif;transition:.15s;
+  min-height:40px;display:inline-flex;align-items:center;justify-content:center;
+  touch-action:manipulation;
+}
+.btn:hover{background:var(--gold-light);}
+.btn.secondary{background:transparent;color:var(--gold-light);border:1px solid var(--gold);}
+.btn.secondary:hover{background:rgba(201,162,39,.15);}
+.btn.navy{background:var(--navy);color:#fff;}
+.btn.navy:hover{background:var(--navy-dark);}
+.btn.danger{background:var(--danger);color:#fff;}
+.btn.ghost{background:transparent;color:var(--navy);border:1px solid var(--navy);}
+.btn.ghost:hover{background:var(--paper-alt);}
+.btn.sm{padding:5px 10px;font-size:12px;min-height:32px;}
+.btn.icon{padding:9px 12px;min-width:40px;}
+
+/* ===================== ONGLETS ===================== */
+.tabs-wrap{
+  background:var(--navy-dark);
+  padding:0;
+  overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;
+  position:sticky;top:var(--toolbar-h,58px);z-index:90;
+  -webkit-overflow-scrolling:touch;
+}
+.tabs-wrap::-webkit-scrollbar{display:none;}
+.tabs{
+  display:flex;gap:4px;padding:6px 12px 0;
+  font-family:Arial,sans-serif;min-width:max-content;
+}
+.tabs button{
+  border:none;background:#16305f;color:var(--gold-light);
+  padding:9px 14px;border-radius:6px 6px 0 0;
+  font-weight:bold;font-size:13px;cursor:pointer;
+  transition:.15s;min-height:44px;white-space:nowrap;
+  font-family:inherit;
+}
+.tabs button.on{background:var(--paper);color:var(--navy);}
+body.dark .tabs button.on{background:#252525;color:#e8d28a;}
+
+/* ===================== MAIN ===================== */
+main{
+  max-width:900px;margin:0 auto;
+  padding:20px 16px 80px;
+}
+@media (max-width:560px){
+  main{padding:14px 10px 80px;}
+}
+section[hidden]{display:none;}
+
+/* ===================== CARTES ===================== */
+.card{
+  background:var(--paper);
+  border-radius:8px;
+  padding:18px 20px;
+  margin-bottom:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.10);
+  border-top:4px solid var(--gold);
+}
+body.dark .card{background:#252525;border-color:#c9a227;}
+.card.navy{border-top-color:var(--navy);}
+.card.flat{box-shadow:none;}
+.card h2{
+  font-size:17px;color:var(--navy);margin:0 0 14px;
+  font-family:Georgia,serif;letter-spacing:.2px;
+  border-bottom:2px solid var(--gold);padding-bottom:8px;
+}
+body.dark .card h2{color:var(--gold);}
+.card h3{
+  font-size:14.5px;color:var(--navy);margin:14px 0 8px;
+  font-style:italic;
+}
+body.dark .card h3{color:var(--gold-light);}
+
+/* ===================== FORMULAIRES ===================== */
+label{
+  display:block;font-size:12.5px;font-weight:bold;
+  color:var(--navy);margin:10px 0 4px;
+  font-family:Arial,sans-serif;
+}
+body.dark label{color:var(--gold-light);}
+input,select,textarea{
+  width:100%;padding:9px 11px;
+  border:1px solid var(--line);border-radius:5px;
+  background:#fff;color:var(--text);
+  font-size:15px;font-family:inherit;
+  -webkit-appearance:none;appearance:none;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(201,162,39,.18);
+}
+textarea{resize:vertical;min-height:60px;line-height:1.45;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px;}
+@media (max-width:560px){.row,.row3{grid-template-columns:1fr;}}
+.full{grid-column:1/-1;}
+.check-row{display:flex;align-items:center;gap:8px;margin:10px 0;}
+.check-row input[type=checkbox]{width:20px;height:20px;flex:none;}
+.check-row label{margin:0;font-weight:normal;font-size:14px;}
+.role-check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px 10px;margin-top:8px}
+.role-check{display:flex!important;align-items:center;gap:5px;min-width:0;margin:0!important;padding:4px 5px;border:1px solid var(--line);border-radius:5px;font-size:12px!important;font-weight:normal!important;line-height:1.25}
+.role-check input[type=checkbox]{width:12px!important;height:12px!important;min-width:12px;min-height:12px;flex:none;margin:0;appearance:auto;-webkit-appearance:checkbox;box-shadow:none!important}
+#btnBackGlobal{white-space:nowrap}
+
+/* ===================== SECTION TITLES ===================== */
+.section-title{
+  font-style:italic;font-weight:bold;color:var(--navy);font-size:15px;
+  margin:24px 0 10px;padding-bottom:4px;
+  border-bottom:2px solid var(--gold);
+  text-transform:uppercase;letter-spacing:.3px;
+  font-family:Georgia,serif;
+}
+body.dark .section-title{color:var(--gold);}
+.section-title .roman{
+  color:var(--gold);font-weight:bold;font-style:normal;
+  margin-right:6px;font-family:Arial,sans-serif;
+}
+
+/* ===================== KPI ===================== */
+.kp{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;margin-bottom:14px;
+}
+.kp > div{
+  background:var(--paper);border:1px solid var(--line);
+  border-top:4px solid var(--gold);border-radius:8px;padding:14px;
+  text-align:center;
+}
+body.dark .kp > div{background:#252525;}
+.kp b{display:block;font-size:26px;color:var(--navy);font-family:Georgia,serif;line-height:1.1;}
+body.dark .kp b{color:var(--gold);}
+.kp span{font-size:12px;color:var(--muted);font-family:Arial,sans-serif;display:block;margin-top:4px;}
+body.dark .kp span{color:#aaa;}
+
+/* ===================== TABLEAUX ===================== */
+.tw{overflow-x:auto;margin:0 -4px;}
+table.grid-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.grid-table th{
+  background:var(--navy);color:var(--gold-light);
+  padding:9px 8px;font-style:italic;font-weight:normal;
+  border:1px solid var(--navy);text-align:left;
+  font-family:Arial,sans-serif;font-size:12.5px;white-space:nowrap;
+}
+table.grid-table td{
+  border:1px solid var(--line);padding:7px 8px;
+  vertical-align:top;background:#fff;
+}
+body.dark table.grid-table td{background:#1a1a1a;}
+table.grid-table tr.clickable{cursor:pointer;}
+table.grid-table tr.clickable:hover td{background:var(--paper-alt);}
+body.dark table.grid-table tr.clickable:hover td{background:#333;}
+table.grid-table input, table.grid-table select{
+  border:none;background:transparent;padding:4px;
+  font-size:14px;border-radius:3px;
+}
+table.grid-table input:focus{background:#fffdf0;outline:none;}
+
+/* ===================== LISTES ===================== */
+.list-item{
+  border:1px solid var(--line);border-radius:6px;
+  padding:12px 14px;margin-bottom:10px;
+  background:var(--paper);
+  transition:.15s;
+}
+body.dark .list-item{background:#252525;border-color:#444;}
+.list-item:hover{border-color:var(--gold);}
+.list-item .top{
+  display:flex;justify-content:space-between;
+  align-items:flex-start;gap:10px;flex-wrap:wrap;
+  font-weight:bold;font-size:15px;color:var(--navy);
+}
+body.dark .list-item .top{color:var(--gold-light);}
+.list-item .meta{
+  font-size:12.5px;color:var(--muted);
+  margin-top:4px;font-family:Arial,sans-serif;
+  line-height:1.5;
+}
+body.dark .list-item .meta{color:#aaa;}
+.list-item .actions{
+  margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;
+  font-family:Arial,sans-serif;
+}
+
+/* ===================== TAGS ===================== */
+.tag{
+  display:inline-block;padding:2px 9px;border-radius:12px;
+  font-size:11.5px;font-weight:bold;
+  font-family:Arial,sans-serif;letter-spacing:.2px;
+  background:#e4e9f3;color:var(--navy);
+}
+.tag.ok{background:#d4f0d4;color:var(--ok);}
+.tag.warn{background:#ffe8c2;color:var(--warn);}
+.tag.danger{background:#f8dcd9;color:var(--danger);}
+.tag.navy{background:var(--navy);color:var(--gold-light);}
+
+/* ===================== EMPTY STATE ===================== */
+.empty{
+  text-align:center;padding:32px 16px;color:var(--muted);
+  font-style:italic;font-size:14px;
+  font-family:Georgia,serif;
+}
+body.dark .empty{color:#888;}
+
+/* ===================== TOOLBAR (listes) ===================== */
+.toolbar-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:14px;gap:10px;flex-wrap:wrap;
+}
+.toolbar-row h2{margin:0;border:none;padding:0;}
+.toolbar-row .actions{display:flex;gap:6px;flex-wrap:wrap;}
+
+/* ===================== SEARCH ===================== */
+.search-box{position:relative;margin-bottom:12px;}
+.search-box input{
+  padding-left:36px;font-size:15px;
+  border:1px solid var(--line);border-radius:8px;
+  min-height:44px;
+}
+.search-box::before{
+  content:"🔍";position:absolute;left:12px;top:50%;
+  transform:translateY(-50%);font-size:15px;
+  pointer-events:none;
+}
+
+/* ===================== BARS (graphique) ===================== */
+.bars{
+  display:flex;align-items:flex-end;gap:8px;
+  height:170px;padding:0 4px;margin-top:14px;
+}
+.bars > div{
+  flex:1;height:100%;display:flex;flex-direction:column;
+  justify-content:flex-end;align-items:center;gap:3px;
+}
+.bars i{
+  width:100%;background:linear-gradient(var(--gold),#a8812f);
+  border-radius:6px 6px 0 0;min-height:3px;display:block;
+}
+.bars em{font:bold 12px Arial;color:var(--navy);font-style:normal;}
+body.dark .bars em{color:var(--gold-light);}
+.bars small{font-size:11px;color:var(--muted);font-family:Arial;}
+
+/* ===================== HOME GRID ===================== */
+.home-hero{
+  background:var(--navy);color:#fff;
+  border:2px solid var(--gold);border-radius:14px;
+  padding:20px 16px;text-align:center;margin-bottom:16px;
+}
+.home-hero .crest{
+  font-size:11px;letter-spacing:1.2px;color:var(--gold-light);
+  font-family:Arial;font-weight:bold;margin-bottom:8px;
+}
+.home-hero h2{
+  margin:8px 0 2px;font:bold 22px/1.25 Georgia,serif;color:#fff;
+  border:none;padding:0;
+}
+.home-hero p{margin:0;font:15px Georgia,serif;color:var(--gold-light);}
+.home-grid{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr;gap:8px;
+  height:calc(100vh - 82px - env(safe-area-inset-top,0px));height:calc(100dvh - 82px - env(safe-area-inset-top,0px));min-height:430px;}
+@media (min-width:760px){.home-grid{grid-template-columns:repeat(3,1fr);}}
+body.on-home main{padding-top:8px;padding-bottom:8px;}
+.home-card{display:flex;flex-direction:row;align-items:center;gap:9px;text-align:left;min-width:0;
+  padding:6px 10px;background:#fff;border:2.5px solid var(--gold);border-radius:16px;
+  font-family:Arial,sans-serif;color:var(--navy);cursor:pointer;touch-action:manipulation;transition:.15s;overflow:hidden;}
+.home-card.wide{grid-column:1/-1;background:var(--navy);color:var(--gold-light);}
+.home-card.wide small{color:#e8d28a;opacity:.85;}
+.home-card:hover,.home-card:active{background:#f7efcf;}
+.home-card.wide:hover,.home-card.wide:active{background:var(--navy-dark);}
+.home-card .ico{font-size:30px;line-height:1;flex:none;}
+.home-card .tx{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.home-card b{font-size:15px;line-height:1.15;font-weight:700;}
+.home-card small{font-size:11.5px;color:var(--muted);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+body.dark .home-card{background:#252525;color:var(--gold-light);border-color:#c9a227;}
+body.dark .home-card:hover{background:#333;}
+body.dark .home-card small{color:#bbb;}
+.backbar{display:flex;align-items:center;gap:10px;padding:8px 12px;font-family:Arial,sans-serif;}
+.backbar .btn{min-height:38px;}
+.backbar span{color:var(--gold-light);font-weight:bold;font-size:15px;}
+
+/* ===================== MODALES ===================== */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(6,21,48,.65);z-index:200;
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal-box{
+  background:var(--paper);border-top:6px solid var(--gold);
+  border-radius:8px;max-width:480px;width:100%;
+  padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.4);
+  max-height:90vh;overflow-y:auto;
+}
+body.dark .modal-box{background:#252525;}
+.modal-box h2{
+  margin:0 0 4px;color:var(--navy);text-align:center;
+  border:none;padding:0;font-size:18px;
+}
+body.dark .modal-box h2{color:var(--gold);}
+.modal-box .subtitle{
+  text-align:center;font-size:13px;color:var(--muted);
+  font-style:italic;margin-bottom:16px;
+}
+.modal-box .modal-actions{
+  display:flex;gap:8px;justify-content:flex-end;
+  margin-top:20px;flex-wrap:wrap;
+}
+
+/* ===================== SHEET (bottom sheet mobile) ===================== */
+.sheet-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(6,21,48,.65);z-index:210;
+  align-items:flex-end;justify-content:center;
+}
+.sheet-overlay.open{display:flex;}
+@media (min-width:761px){.sheet-overlay{align-items:center;}}
+.sheet-panel{
+  background:var(--paper);width:100%;max-width:600px;
+  max-height:92vh;overflow-y:auto;
+  border-radius:18px 18px 0 0;
+  padding:22px;
+  padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));
+}
+@media (min-width:761px){.sheet-panel{border-radius:18px;}}
+.sheet-panel h3{
+  margin:0 0 12px;color:var(--navy);font-size:19px;
+  border-bottom:2px solid var(--gold);padding-bottom:8px;
+}
+body.dark .sheet-panel h3{color:var(--gold);}
+
+/* ===================== TOAST ===================== */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--navy);color:var(--gold-light);
+  padding:12px 20px;border-radius:6px;
+  font-family:Arial;font-size:13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);z-index:500;
+  display:flex;gap:14px;align-items:center;
+  max-width:90vw;
+  animation:toastIn .25s ease-out;
+}
+@keyframes toastIn{
+  from{opacity:0;transform:translate(-50%,20px);}
+  to{opacity:1;transform:translate(-50%,0);}
+}
+
+/* ===================== CONFIRM MODAL ===================== */
+.confirm-modal{
+  position:fixed;inset:0;background:rgba(6,21,48,.75);
+  z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .15s;
+}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.confirm-modal .box{
+  background:var(--paper);border-top:6px solid var(--gold);
+  border-radius:6px;max-width:400px;width:100%;
+  padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.5);
+  font-family:Georgia,serif;text-align:center;
+}
+body.dark .confirm-modal .box{background:#252525;}
+.confirm-modal .box p{
+  font-size:14.5px;line-height:1.5;margin:0 0 18px;
+  color:var(--navy);white-space:pre-wrap;
+}
+body.dark .confirm-modal .box p{color:#e8d28a;}
+.confirm-modal .btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.confirm-modal button{
+  padding:11px 20px;border-radius:5px;font-weight:bold;font-size:13px;
+  cursor:pointer;border:none;font-family:Arial;min-height:44px;min-width:110px;
+}
+.confirm-modal .yes{background:var(--gold);color:var(--navy-dark);}
+.confirm-modal .yes:hover{background:var(--gold-light);}
+.confirm-modal .no{background:#888;color:#fff;}
+
+/* ===================== PICKER MEMBRE ===================== */
+.picker-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(6,21,48,.65);z-index:230;
+  align-items:flex-end;justify-content:center;
+}
+.picker-overlay.open{display:flex;}
+.picker-panel{
+  background:var(--paper);width:100%;max-width:480px;
+  max-height:70vh;overflow-y:auto;
+  border-radius:16px 16px 0 0;padding:18px;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+}
+.picker-panel h3{margin-top:0;color:var(--navy);border:none;padding:0;}
+.picker-item{
+  width:100%;text-align:left;background:transparent;border:none;
+  border-bottom:1px solid var(--line);padding:12px 6px;
+  font-size:15px;color:var(--text);cursor:pointer;font-family:inherit;
+}
+.picker-item:hover{background:var(--paper-alt);}
+
+/* ===================== SELECTEUR MEMBRE (bouton 👤) ===================== */
+.pickwrap{display:flex;gap:6px;align-items:stretch;}
+.pickwrap input{flex:1;}
+.pick-btn{
+  flex:none;background:var(--navy);color:var(--gold-light);
+  border:none;border-radius:5px;padding:0 12px;font-size:16px;
+  cursor:pointer;min-width:44px;
+}
+
+/* ===================== PIED DE PAGE ===================== */
+footer{
+  text-align:center;font-size:12px;color:var(--muted);
+  padding:20px 12px calc(40px + env(safe-area-inset-bottom,0px));
+  font-family:Arial;max-width:900px;margin:0 auto;
+}
+
+/* ===================== IMPRESSION ===================== */
+@media print{
+  .toolbar,.tabs-wrap,.no-print,footer,nav{display:none!important;}
+  body{background:#fff!important;color:#000!important;}
+  body.dark{background:#fff!important;color:#000!important;}
+  body.dark .card{background:#fff!important;border:1px solid #999!important;}
+  main{padding:0;max-width:100%;}
+  section[hidden]{display:none!important;}
+  .card{
+    box-shadow:none;border:1px solid #999;border-top:3px solid #0a1f44;
+    page-break-inside:avoid;margin-bottom:8pt;
+  }
+  .list-item{display:none!important;}
+  table.print-table{display:table!important;width:100%;}
+  .home-hero{background:#fff!important;color:#000!important;border:3px double #0a1f44;}
+  .home-hero h2,.home-hero p{color:#000!important;}
+  .bars{display:none!important;}
+  .btn,.actions,.tag{display:none!important;}
+  .kp > div{border:1px solid #999;background:#f6f3e8!important;}
+}
+table.print-table{display:none;}
+
+/* ===================== UTILITAIRES ===================== */
+.mt-0{margin-top:0!important;}
+.mb-0{margin-bottom:0!important;}
+.text-center{text-align:center;}
+.text-muted{color:var(--muted);}
+.text-small{font-size:12.5px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.divider{border:none;border-top:1px solid var(--line);margin:14px 0;}
+.print-only{display:none;}
+@media print{.print-only{display:block!important;}}
+
+/* ===================== MODE GRANDS CARACTÈRES ===================== */
+body.big-font{font-size:17px;}
+body.big-font input,body.big-font textarea,body.big-font select{font-size:17px;}
+body.big-font .section-title{font-size:16.5px;}
+
+/* ===================== MENU DÉROULANT ⋯ ===================== */
+.menu{position:relative;}
+.menu-list{
+  display:none;position:absolute;right:0;top:100%;margin-top:4px;
+  background:#fff;border:1px solid #bbb;border-radius:6px;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);min-width:240px;
+  z-index:300;overflow:hidden;
+}
+body.dark .menu-list{background:#2a2a2a;border-color:#555;}
+.menu.open .menu-list{display:block;}
+.menu-list button{
+  display:block;width:100%;text-align:left;border:none;background:#fff;
+  padding:11px 14px;font-size:14px;cursor:pointer;color:var(--navy);
+  font-family:Arial;transition:.15s;min-height:44px;
+}
+body.dark .menu-list button{background:#2a2a2a;color:#e8d28a;}
+.menu-list button:hover{background:#f3ecd2;}
+body.dark .menu-list button:hover{background:#3a3a3a;}
+.menu-list .menu-title{
+  padding:8px 14px;background:var(--navy);color:var(--gold-light);
+  font-size:11px;font-family:Arial;font-weight:bold;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+
+:focus-visible{outline:3px solid #b36b00;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media print{.card,.list-item,tr{break-inside:avoid}input,select,textarea{color:#111!important;background:#fff!important;border:1px solid #555!important}body{background:#fff!important;color:#111!important}body.print-zone #main>section,body.print-zone .toolbar,body.print-zone .tabs-wrap,body.print-zone footer{display:none!important}body.print-zone #zoneReportPrint{display:block!important}body.print-zone #zoneReportPrint[hidden]{display:block!important}}
+</style>
+</head>
+<body>
+
+<!-- ===================== TOOLBAR ===================== -->
+<div class="toolbar" id="toolbar">
+  <div class="brand">
+    <h1 id="tbTitle">✝ Suivi de Zone</h1>
+    <small id="tbSub">Zone spirituelle d'Attiékoi · Fonctionne hors ligne</small>
+  </div>
+  <div class="btns">
+    <button class="btn secondary" id="btnBackGlobal" title="Revenir à la page précédente" aria-label="Revenir à la page précédente">← Retour</button>
+    <button class="btn icon" id="btnSave" title="Enregistrer">💾</button>
+    <div class="menu" id="menuMore">
+      <button class="btn secondary icon" onclick="toggleMenu(event, 'menuMore')" title="Plus d'options">⋯</button>
+      <div class="menu-list">
+        <div class="menu-title">Affichage</div>
+        <button onclick="closeAllMenus(); toggleDark()">🌙 Mode sombre</button>
+        <button onclick="closeAllMenus(); toggleBigFont()">🔍 Grands caractères</button>
+        <div class="menu-title">Sauvegarde</div>
+        <button onclick="closeAllMenus(); exportBackup()">⬇️ Sauvegarde complète</button>
+        <button onclick="closeAllMenus(); document.getElementById('restoreFile').click()">⬆️ Restaurer une sauvegarde</button>
+        <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreBackup(this)">
+        <div class="menu-title">Application</div>
+        <button onclick="closeAllMenus(); showAbout()">ⓘ À propos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ONGLETS ===================== -->
+<div class="tabs-wrap" id="tabsWrap">
+  <nav class="tabs" id="mainTabs"></nav>
+</div>
+
+<!-- ===================== MAIN ===================== -->
+<main id="main">
+
+  <!-- ===================== ACCUEIL ===================== -->
+  <section id="tab-home" hidden>
+    <div class="home-grid" id="homeGrid"></div>
+  </section>
+
+  <!-- ===================== STATISTIQUES ===================== -->
+  <section id="tab-stats" hidden>
+    <div class="home-hero">
+      <div class="crest">CMCI CÔTE D'IVOIRE · ZONE SPIRITUELLE D'ATTIÉKOI</div>
+      <h2 id="homeZoneName">Zone spirituelle d'Attiékoi</h2>
+      <p>Suivi · Comptes Rendus · Jeûne</p>
+    </div>
+
+    <div class="kp" id="homeKp"></div>
+
+    <div class="card">
+      <h2>Bilan rapide par assemblée</h2>
+      <div class="tw" id="homeBilan"></div>
+    </div>
+  </section>
+
+  <!-- ===================== DISCIPLES ===================== -->
+  <section id="tab-disciples" hidden>
+    <div class="toolbar-row">
+      <h2>👥 Disciples</h2>
+      <div class="actions">
+        <button class="btn" id="btnNewDisciple">+ Nouveau</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchDisciple" placeholder="Rechercher : code, nom, prénoms, téléphone">
+    </div>
+    <div id="disciplesList"></div>
+    <table class="print-table" id="disciplesPrintTable"></table>
+  </section>
+
+  <!-- ===================== RENCONTRES ===================== -->
+  <section id="tab-rencontres" hidden>
+    <h2 class="section-title">📅 Rencontres de l’assemblée</h2>
+    <p class="text-small text-muted">Choisissez le type de rencontre. Les informations restent organisées dans un même espace d’accès.</p>
+    <div class="home-grid" style="margin-top:14px">
+      <button class="home-card" data-meeting-dest="reports"><span class="ico">📝</span><span class="tx"><b>Culte / adoration</b><small>Compte rendu, présence, absences, invités, Sainte Cène</small></span></button>
+      <button class="home-card" data-meeting-dest="prayers"><span class="ico">🙏</span><span class="tx"><b>Réunion de prière</b><small>Présences et compte rendu de réunion</small></span></button>
+      <button class="home-card" data-meeting-dest="activities"><span class="ico">📋</span><span class="tx"><b>Autres activités</b><small>Évangélisation, formation, veillée et autres activités</small></span></button>
+    </div>
+  </section>
+
+  <!-- ===================== ACTIVITÉS ===================== -->
+  <section id="tab-activities" hidden>
+    <div class="toolbar-row">
+      <h2>📋 Activités</h2>
+      <div class="actions">
+        <button class="btn" id="btnNewActivity">+ Nouvelle</button>
+        <button class="btn ghost" id="btnPrintActivities">🖨️ Imprimer</button>
+      </div>
+    </div>
+    <div id="activitiesList"></div>
+    <table class="print-table" id="activitiesPrintTable"></table>
+  </section>
+
+  <!-- ===================== COMPTES RENDUS ===================== -->
+  <section id="tab-reports" hidden>
+    <div class="toolbar-row">
+      <h2>📝 Comptes rendus de culte</h2>
+      <div class="actions">
+        <button class="btn" id="btnNewReport">+ Nouveau</button>
+        <button class="btn ghost" id="btnPrintReports">🖨️ Imprimer</button>
+      </div>
+    </div>
+    <div id="reportsList"></div>
+    <table class="print-table" id="reportsPrintTable"></table>
+  </section>
+
+  <!-- ===================== FORMULAIRE COMPTE RENDU ===================== -->
+  <section id="tab-report-form" hidden>
+    <div class="toolbar-row">
+      <h2 id="reportFormTitle">Nouveau compte rendu</h2>
+      <div class="actions">
+        <button class="btn ghost" id="btnCancelReport">Annuler</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Informations générales</h2>
+      <div class="row">
+        <div><label>Date</label><input type="date" id="rDate"></div>
+        <div><label>Assemblée</label><select id="rAsm"></select></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coordination</h2>
+      <div class="row">
+        <div>
+          <label>Coordonnateur</label>
+          <div class="pickwrap">
+            <input id="rCoord">
+            <button type="button" class="pick-btn" data-pick="rCoord">👤</button>
+          </div>
+        </div>
+        <div><label>Thème</label><input id="rTheme"></div>
+      </div>
+      <label>Référence biblique</label>
+      <div class="pickwrap"><input id="rRefTheme" placeholder="Ex. Genèse 1:1-3 ; Jean 3:16"><button type="button" class="pick-btn" data-bible-pick="rRefTheme" title="Choisir dans la Bible">📖</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Exhortation</h2>
+      <div class="row">
+        <div>
+          <label>Exhortateur</label>
+          <div class="pickwrap">
+            <input id="rExhort">
+            <button type="button" class="pick-btn" data-pick="rExhort">👤</button>
+          </div>
+        </div>
+        <div><label>Références</label><div class="pickwrap"><input id="rRefExhort" placeholder="Plusieurs références possibles"><button type="button" class="pick-btn" data-bible-pick="rRefExhort" title="Choisir dans la Bible">📖</button></div></div>
+      </div>
+      <label>Idée principale du message</label>
+      <textarea id="rIdee"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Sainte Cène</h2>
+      <div class="row3">
+        <div>
+          <label>Ministre</label>
+          <div class="pickwrap">
+            <input id="rMinistre">
+            <button type="button" class="pick-btn" data-pick="rMinistre">👤</button>
+          </div>
+        </div>
+        <div><label>Référence</label><div class="pickwrap"><input id="rRefCene" placeholder="Référence biblique"><button type="button" class="pick-btn" data-bible-pick="rRefCene" title="Choisir dans la Bible">📖</button></div></div>
+        <div><label>Nb personnes</label><input type="number" min="0" id="rNbCene"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Liste de présence</h2>
+      <div id="presenceGroups"></div>
+      <div class="card flat" style="padding:10px;margin:12px 0;border-top:2px solid var(--gold);">
+        <h3>Âmes en suivi présentes ce dimanche</h3>
+        <p class="text-small text-muted">Cochez les âmes en suivi présentes au culte. La présence sera ajoutée à leur historique dominical et pourra déclencher l’intégration automatique après quatre dimanches consécutifs, si les quatre ministères requis ont été reçus.</p>
+        <div id="soulPresenceGroups"></div>
+      </div>
+      <h3>Absents de cette réunion</h3>
+      <p class="text-small text-muted">Pour chaque membre absent, précisez s’il a prévenu et indiquez le motif si connu.</p>
+      <div id="absenceList"></div>
+      <label>Invités présents (un nom par ligne)</label>
+      <textarea id="rInvitesNoms" placeholder="Nom de l'invité"></textarea>
+      <div class="kp" style="margin-top:12px;">
+        <div><b id="cEnfants">0</b><span>Enfants</span></div>
+        <div><b id="cAdultes">0</b><span>Adultes</span></div>
+        <div><b id="cInvites">0</b><span>Invités</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Dons à Dieu</h2>
+      <div class="row">
+        <div><label>Dîmes (FCFA)</label><input type="number" min="0" id="rDimes"></div>
+        <div><label>Offrande (FCFA)</label><input type="number" min="0" id="rOffrande"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Baptême &amp; Brisement de liens</h2>
+      <label>Noms des baptisés</label>
+      <textarea id="rBaptises" placeholder="Un nom par ligne"></textarea>
+      <label>Noms — brisement de liens malsains</label>
+      <textarea id="rBrisement" placeholder="Un nom par ligne"></textarea>
+    </div>
+
+    <button class="btn" id="btnSaveReport" style="width:100%;padding:14px;font-size:15px;">💾 Enregistrer le compte rendu</button>
+  </section>
+
+  <!-- ===================== VUE COMPTE RENDU ===================== -->
+  <section id="tab-report-view" hidden>
+    <div class="toolbar-row">
+      <button class="btn ghost" id="btnBackReportView">← Retour</button>
+      <div class="actions">
+        <button class="btn secondary" id="btnEditReportView">✏️ Modifier</button>
+        <button class="btn" id="btnPrintReportView">🖨️ Imprimer</button>
+      </div>
+    </div>
+    <div class="card" id="reportViewContent"></div>
+  </section>
+
+  <!-- ===================== PRIÈRES ===================== -->
+  <section id="tab-prayers" hidden>
+    <div class="toolbar-row">
+      <h2>🙏 Réunions de prière</h2>
+      <div class="actions">
+        <button class="btn" id="btnNewPrayer">+ Nouvelle</button>
+      </div>
+    </div>
+    <div id="prayersList"></div>
+  </section>
+
+  <section id="tab-prayer-form" hidden>
+    <div class="toolbar-row">
+      <h2 id="prayerFormTitle">Réunion de prière</h2>
+      <div class="actions">
+        <button class="btn ghost" id="btnCancelPrayer">Annuler</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div><label>Date</label><input type="date" id="pDate"></div>
+        <div><label>Lieu / précision</label><input id="pLieu"></div>
+      </div>
+      <label>Dirigé par</label>
+      <div class="pickwrap">
+        <input id="pDirige">
+        <button type="button" class="pick-btn" data-pick="pDirige">👤</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Liste de présence</h2>
+      <div id="prayerPresenceGroups"></div>
+      <label>Invités présents (un nom par ligne)</label>
+      <textarea id="pInvitesNoms"></textarea>
+    </div>
+    <button class="btn" id="btnSavePrayer" style="width:100%;padding:14px;font-size:15px;">💾 Enregistrer la réunion</button>
+  </section>
+
+  <section id="tab-prayer-view" hidden>
+    <div class="toolbar-row">
+      <button class="btn ghost" id="btnBackPrayerView">← Retour</button>
+      <button class="btn" id="btnPrintPrayer">🖨️ Imprimer</button>
+    </div>
+    <div class="card" id="prayerViewContent"></div>
+  </section>
+
+  <!-- ===================== JEÛNE ===================== -->
+  <section id="tab-jeune" hidden>
+    <div id="jeuneRoot"></div>
+  </section>
+
+  <!-- ===================== MEMBRES ===================== -->
+  <!-- ===================== FORMULAIRE MEMBRE (PAGE DISTINCTE) ===================== -->
+  <section id="tab-member-form" hidden>
+    <div class="toolbar-row">
+      <h2>👤 Fiche du membre</h2>
+      <div class="actions"><button class="btn ghost" id="btnBackMemberList">← Retour à la liste</button></div>
+    </div>
+    <div class="card">
+      <h2 id="memberFormTitle">Ajouter un membre</h2>
+      <div class="row">
+        <div><label>Nom complet</label><input id="mNom"></div>
+        <div><label>Catégorie</label>
+          <select id="mCat">
+            <option value="Enfant">Enfant</option>
+            <option value="Jeune">Jeune</option>
+            <option value="Adulte">Adulte</option>
+            <option value="Personne âgée">Personne âgée</option>
+          </select>
+        </div>
+        <div><label>Sexe</label><select id="mSex"><option value="">Non précisé</option><option value="Homme">Homme</option><option value="Femme">Femme</option></select></div>
+      </div>
+      <div class="card" style="padding:12px;margin:10px 0;">
+        <label>Fonction(s) dans l’église — plusieurs choix possibles</label>
+        <div id="memberRolesForm" class="role-check-grid"></div>
+        <label style="margin-top:8px;">Autre fonction (facultatif)</label><input id="mRoleOther" placeholder="Ajouter une fonction non listée">
+      </div>
+      <div class="row">
+        <div><label>Téléphone</label><input id="mTel" inputmode="tel"></div>
+        <div><label>Date de conversion</label><input type="date" id="mConv"></div>
+      </div>
+      <div class="row">
+        <div><label>Date d'intégration</label><input type="date" id="mIntegration"></div>
+        <div><label>Assemblée</label><select id="mAsm"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Faiseur de disciple — nom</label><input id="mDiscNom"></div>
+        <div><label>Faiseur de disciple — contact</label><input id="mDiscTel" inputmode="tel"></div>
+      </div>
+      <div class="flex-between" style="margin-top:14px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" id="btnAddMember">Ajouter</button>
+          <button class="btn ghost" id="btnCancelMemberEdit" hidden>Annuler</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-members" hidden>
+    <div class="card">
+      <div class="toolbar-row">
+        <h2 style="margin:0;">Liste des membres <span class="tag navy" id="memberCount">0</span></h2>
+        <div class="actions">
+          <button class="btn sm" id="btnNewMember">＋ Nouveau membre</button>
+          <button class="btn ghost sm" id="btnOpenDisciples">👥 Liste des disciples</button>
+          <button class="btn ghost sm" id="btnImportQG">📥 Importer QG</button>
+          <button class="btn ghost sm" id="btnPrintMembers">🖨️</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <div><label for="membersAssemblyFilter">Assemblée</label><select id="membersAssemblyFilter"><option value="">Toutes les assemblées</option></select></div>
+        <div><label for="membersCategoryFilter">Catégorie d’âge</label><select id="membersCategoryFilter"><option value="">Toutes les catégories</option><option>Enfant</option><option>Jeune</option><option>Adulte</option><option>Personne âgée</option></select></div>
+        <div><label for="membersSexFilter">Sexe</label><select id="membersSexFilter"><option value="">Hommes et femmes</option><option>Homme</option><option>Femme</option></select></div>
+        <div><label for="membersRoleFilter">Fonction</label><select id="membersRoleFilter"><option value="">Toutes les fonctions</option></select></div>
+      </div>
+      <p class="text-small text-muted">Les filtres se combinent. Vous pouvez afficher, par exemple, les femmes anciennes d’une assemblée ou les jeunes semeurs de toute la zone.</p>
+      <div id="membersList"></div>
+      <table class="print-table" id="membersPrintTable"></table>
+    </div>
+    <div class="card" id="retrogradesCard">
+      <div class="toolbar-row">
+        <h2 style="margin:0;">⚠️ Frères à suivre — 4 cultes consécutifs</h2>
+        <button class="btn ghost sm" id="btnPrintRetrogrades">🖨️ Imprimer</button>
+      </div>
+      <p class="text-small text-muted">Cette liste repère les membres absents pendant au moins quatre cultes consécutifs enregistrés, sans annonce et sans motif renseigné. Il s’agit d’un signal de suivi pastoral, à vérifier par le dirigeant, et non d’une rétrogradation automatique.</p>
+      <div id="retrogradesList"></div>
+      <table class="print-table" id="retrogradesPrintTable"></table>
+    </div>
+  </section>
+
+  <!-- ===================== SUIVI DES ÂMES ===================== -->
+  <section id="tab-souls" hidden>
+    <div class="toolbar-row">
+      <h2>💚 Suivi des invités et des âmes</h2>
+      <div class="actions"><button class="btn" id="btnNewSoul">+ Nouvelle fiche</button><button class="btn ghost" id="btnExportSouls">Exporter CSV</button></div>
+    </div>
+    <div class="card">
+      <p class="text-small text-muted">Une fiche par personne. Ajoutez les étapes de son parcours au fil du temps ; une personne peut avoir plusieurs étapes sans être comptée plusieurs fois.</p>
+      <div class="row"><div><label>Nom complet</label><input id="soulName" autocomplete="name"></div><div><label>Téléphone (facultatif)</label><input id="soulTel" inputmode="tel"></div></div>
+      <div class="row"><div><label>Date du premier contact</label><input id="soulDate" type="date"></div><div><label>Assemblée de suivi</label><select id="soulAsm"></select></div></div>
+      <div class="row"><div><label>Invité par</label><input id="soulInvitedBy"></div><div><label>Responsable du suivi</label><input id="soulFollowBy"></div></div>
+      <label>Étape actuelle</label><select id="soulStage"><option>Invité / premier contact</option><option>Conduit à Christ</option><option>Conduit à la repentance</option><option>Suivi spirituel en cours</option><option>Baptisé d’eau</option><option>Brisement de liens malsains</option><option>Intégré dans une assemblée</option><option>Muté vers une autre assemblée</option><option>En veille / à recontacter</option></select>
+      <label>Étapes / ministères déjà reçus</label>
+      <div id="soulMinistries" class="role-check-grid">
+        <label class="role-check"><input type="checkbox" name="soulMinistry" value="Conduit à Christ"><span>Conduit à Christ</span></label>
+        <label class="role-check"><input type="checkbox" name="soulMinistry" value="Conduit à la repentance"><span>Conduit à la repentance</span></label>
+        <label class="role-check"><input type="checkbox" name="soulMinistry" value="Baptisé d’eau"><span>Baptisé d’eau</span></label>
+        <label class="role-check"><input type="checkbox" name="soulMinistry" value="Brisement de liens malsains"><span>Brisement de liens malsains</span></label>
+      </div>
+      <p class="text-small text-muted">Règle d’intégration automatique : les quatre étapes ci-dessus doivent être cochées et quatre dimanches consécutifs de présence doivent être enregistrés.</p>
+      <div class="row"><div><label>Date de l’étape</label><input id="soulStageDate" type="date"></div><div><label>Assemblée d’accueil / destination (si applicable)</label><select id="soulDestAsm"></select></div></div>
+      <label>Notes de suivi (éviter les renseignements sensibles non nécessaires)</label><textarea id="soulNotes" rows="2"></textarea>
+      <div class="actions" style="margin-top:12px"><button class="btn" id="btnSaveSoul">Enregistrer la fiche</button><button class="btn ghost" id="btnCancelSoul" hidden>Annuler la modification</button></div>
+    </div>
+    <div class="card"><div class="row"><div><label>Rechercher une personne</label><input id="soulSearch" placeholder="Nom, téléphone, responsable"></div><div><label>Filtrer par étape</label><select id="soulFilter"><option value="">Toutes les étapes</option><option>Invité / premier contact</option><option>Conduit à Christ</option><option>Conduit à la repentance</option><option>Suivi spirituel en cours</option><option>Baptisé d’eau</option><option>Brisement de liens malsains</option><option>Intégré dans une assemblée</option><option>Muté vers une autre assemblée</option><option>En veille / à recontacter</option></select></div><div><label>Assemblée</label><select id="soulAsmFilter"><option value="">Toutes les assemblées</option></select></div></div><div class="row"><div><label>Étape à partir du</label><input id="soulDateFrom" type="date"></div><div><label>Étape jusqu’au</label><input id="soulDateTo" type="date"></div></div><p class="text-small text-muted">Les listes des baptisés, personnes conduites à Christ ou à la repentance et personnes intégrées peuvent être obtenues en choisissant l’étape et la période.</p><div id="soulsList"></div></div>
+  </section>
+
+  <!-- ===================== FINANCES ===================== -->
+  <section id="tab-finance" hidden>
+    <div class="toolbar-row">
+      <h2>💰 Finances globales</h2>
+      <div class="actions">
+        <button class="btn ghost" id="btnOpenJeune">🙏 Intentions de jeûne</button>
+        <button class="btn" id="btnNewFinance">+ Opération</button>
+        <button class="btn ghost" id="btnPrintFinance">🖨️</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Bilan par assemblée</h2>
+      <div class="tw" id="financeBilan"></div>
+    </div>
+    <div class="card">
+      <h2>Historique des opérations</h2>
+      <div id="globalFinList"></div>
+      <table class="print-table" id="globalFinPrintTable"></table>
+    </div>
+    <div class="card">
+      <h2>💵 Enregistrer dîme / offrande</h2>
+      <div class="row">
+        <div><label>Date</label><input type="date" id="dimeDate"></div>
+        <div><label>Membre</label><select id="dimeMember"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Dîme (FCFA)</label><input type="number" min="0" id="dimeDime"></div>
+        <div><label>Offrande (FCFA)</label><input type="number" min="0" id="dimeOffrande"></div>
+      </div>
+      <div class="row">
+        <div><label>Assemblée</label><select id="dimeAsm"></select></div>
+        <div></div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnAddDime">Enregistrer</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="toolbar-row">
+        <h2 style="margin:0;">Historique</h2>
+        <button class="btn ghost" id="btnPrintDimes">🖨️</button>
+      </div>
+      <div id="dimesList"></div>
+      <table class="print-table" id="dimesPrintTable"></table>
+    </div>
+    <div class="card" id="specialCollectionsCard">
+      <div class="toolbar-row"><h2 style="margin:0;">🎯 Collectes spéciales</h2><button class="btn ghost sm" id="btnPrintSpecialCollections">🖨️ Imprimer</button></div>
+      <p class="text-small text-muted">Pour les collectes ponctuelles : soutien à une croisade, aide à une personne, événement ou autre besoin précis.</p>
+      <div class="row"><div><label>Date</label><input type="date" id="scDate"></div><div><label>Assemblée concernée</label><select id="scAsm"></select></div></div>
+      <div class="row"><div><label>Nom de la collecte</label><input id="scTitle" placeholder="Ex. Soutien à la croisade"></div><div><label>Montant collecté (FCFA)</label><input type="number" min="1" id="scAmount"></div></div>
+      <div class="row"><div><label>Donateur (facultatif)</label><input id="scDonor" placeholder="Nom du donateur ou collectif"></div><div><label>Objet / précision</label><input id="scNote" placeholder="Ex. Soutien à sœur Liliane"></div></div>
+      <div class="actions" style="margin-top:12px;"><button class="btn" id="btnAddSpecialCollection">Enregistrer la collecte</button></div>
+      <div id="specialCollectionsList" style="margin-top:12px;"></div>
+      <table class="print-table" id="specialCollectionsPrintTable"></table>
+    </div>
+  </section>
+
+  <!-- ===================== STRUCTURE ===================== -->
+  <section id="tab-structure" hidden>
+    <h2 class="section-title">⛪ Structure</h2>
+    <div class="card">
+      <label>Nom de la zone</label>
+      <input id="zoneName">
+    </div>
+    <div class="toolbar-row">
+      <h3 style="margin:0;color:var(--navy);">Localités</h3>
+      <button class="btn sm" id="btnNewLoc">+ Localité</button>
+    </div>
+    <div class="card" id="locList"></div>
+    <div class="toolbar-row">
+      <h3 style="margin:0;color:var(--navy);">Assemblées</h3>
+      <button class="btn sm" id="btnNewAsm">+ Assemblée</button>
+    </div>
+    <div class="card" id="asmList"></div>
+  </section>
+
+  <!-- ===================== TRANSFERT ===================== -->
+  <section id="tab-transfer" hidden>
+    <h2 class="section-title">🔄 Transfert et sauvegarde</h2>
+
+    <div class="card">
+      <h2>Envoyer / partager des données</h2>
+      <p class="text-small text-muted">Crée un fichier à transmettre (WhatsApp, Bluetooth, clé USB…).</p>
+      <select id="xAsm"></select>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnExport">⬇️ Exporter</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Administration de zone — réception et centralisation</h2>
+      <p class="text-small text-muted">L’importation des fichiers reçus est réservée à l’administrateur de zone.</p>
+      <div id="adminLocked"><label>Mot de passe administrateur</label><input id="adminPassword" type="password" autocomplete="current-password"><button class="btn" id="btnAdminUnlock" style="margin-top:10px">Déverrouiller l’administration</button></div>
+      <div id="adminImportArea" hidden><p class="tag">Accès administrateur déverrouillé pour cette session</p><input type="file" accept=".json,application/json" id="importFile"><div id="importPreview" style="margin-top:12px;"></div><div class="row" style="margin-top:12px"><div><label>Rapport du (facultatif)</label><input type="date" id="zoneReportStart"></div><div><label>Au (facultatif)</label><input type="date" id="zoneReportEnd"></div></div><div class="actions" style="margin-top:12px"><button class="btn" id="btnZoneReport">Générer le rapport de zone</button><button class="btn ghost" id="btnAdminLock">Verrouiller</button></div></div>
+    </div>
+
+    <div class="card">
+      <h2>Sauvegarde complète</h2>
+      <p class="text-small text-muted">Une copie locale est faite chaque jour, mais elle ne protège pas contre la perte du téléphone.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="btnBackup">⬇️ Sauvegarde complète</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Historique des imports</h2>
+      <div id="importHistory"></div>
+    </div>
+  </section>
+
+</main>
+<section id="zoneReportPrint" hidden></section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  Application conçue par frère Koffi Jean Marc · Disciple d'Ettien Antoine Edja · 07 47 28 46 94
+</footer>
+
+<!-- ===================== MODALE SHEET ===================== -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet-panel" id="sheetContent"></div>
+</div>
+
+<!-- ===================== PICKER MEMBRE ===================== -->
+<div class="picker-overlay" id="pickerOverlay">
+  <div class="picker-panel">
+    <h3>Choisir un frère / une sœur dans la liste des membres</h3>
+    <p class="text-small text-muted">Sélectionnez la personne qui assurera cette responsabilité.</p>
+    <input id="pickerSearch" placeholder="Rechercher par nom ou prénom" style="width:100%;margin-bottom:10px;">
+    <div id="pickerList"></div>
+    <div style="margin-top:14px;">
+      <button class="btn ghost" id="btnClosePicker" style="width:100%;">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SÉLECTEUR DE RÉFÉRENCES BIBLIQUES ===================== -->
+<div class="picker-overlay" id="biblePickerOverlay">
+  <div class="picker-panel" style="max-width:620px;max-height:90vh;overflow:auto;">
+    <h3>Choisir une référence biblique</h3>
+    <p class="text-small text-muted">Choisissez le livre, le chapitre et une plage de versets. Ajoutez chaque référence séparément pour citer plusieurs passages, y compris des versets non consécutifs ou plusieurs livres.</p>
+    <label>Livre biblique</label><select id="bibleBook" style="width:100%;"></select>
+    <div class="row">
+      <div><label>Chapitre</label><select id="bibleChapter" style="width:100%;"></select></div>
+      <div><label>Premier verset</label><select id="bibleVerseStart" style="width:100%;"></select></div>
+      <div><label>Dernier verset</label><select id="bibleVerseEnd" style="width:100%;"></select></div>
+    </div>
+    <div id="bibleRefPreview" class="card" style="margin:10px 0;padding:10px;"></div>
+    <button type="button" class="btn" id="btnAddBibleRef" style="width:100%;">＋ Ajouter cette référence</button>
+    <div style="margin-top:12px;display:flex;gap:8px;">
+      <button type="button" class="btn ghost" id="btnCloseBiblePicker" style="flex:1;">Terminer</button>
+      <button type="button" class="btn ghost" id="btnClearBibleRefs" style="flex:1;">Effacer le champ</button>
+    </div>
+    <p class="text-small text-muted" style="margin-top:10px;">Catalogue de référence : Bible Louis Segond 1910, canon protestant de 66 livres. Vérifiez les références composées si votre exemplaire utilise une versification particulière.</p>
+  </div>
+</div>
+
+<!-- ===================== MODALE À PROPOS ===================== -->
+<div class="modal-overlay" id="aboutModal">
+  <div class="modal-box">
+    <h2>✝ Suivi de Zone</h2>
+    <p class="subtitle">Zone spirituelle d'Attiékoi</p>
+    <p class="text-center text-small">
+      <b>Application conçue par</b><br>
+      frère Koffi Jean Marc<br>
+      Disciple d'Ettien Antoine Edja<br>
+      <b>07 47 28 46 94</b>
+    </p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn" onclick="closeModal('aboutModal')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   PLACEHOLDER — Les scripts seront collés dans les messages 2 et 3
+   ========================================================= */
+
+/* =========================================================
+   NOYAU — Données, navigation, utilitaires, rendu principal
+   ========================================================= */
+
+/* ---------- Sélecteurs & utilitaires ---------- */
+const $  = s => document.querySelector(s);
+const $$ = id => document.getElementById(id);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const fr = n => (+n||0).toLocaleString('fr-FR');
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDate = d => d ? d.split('-').reverse().join('/') : '';
+const numbered = arr => arr.map((v,i)=>`${i+1}. ${esc(v)}`).join('<br>');
+const tot = a => (a.h||0)+(a.f||0)+(a.e||0);
+
+/* ---------- Constantes métier ---------- */
+const TYPES_ACT = ['Culte','Réunion de prière','Veillée','Évangélisation','Formation','Jeûne et prière'];
+const CATS_FIN  = ['Dîme','Offrande','FMN','FMI','CONSTRUCTION DU QUARTIER GÉNÉRAL','FG','HOPE CLINIQUE','JEUNESSE','RTVC','TRAITÉ ÉVANGÉLIQUE','ÉVANGÉLISATION','MISÉRICORDE ASSEMBLÉE','MISÉRICORDE ZONES','INSTRUMENTS DES SEMEURS','Autre recette','Fonctionnement','Aide sociale','Autre dépense'];
+function allFinCats(){ return [...new Set([...CATS_FIN, ...(db?.fin||[]).map(x=>x.cat).filter(Boolean)])]; }
+const MEMBER_ROLES = ['Semeur (chantre)','Missionnaire','Ancien','Ancien en formation','Dirigeant','Dirigeant en formation','Responsable de jeune','Alphabétiseur','Sait faire la médiation biblique','Ministre de délivrance','Ministre aux enfants'];
+const STORAGE_KEY = 'suivi_zone_v3';
+
+/* ---------- État global ---------- */
+let db;
+const state = {
+  tab: 'home',
+  navHistory: [],
+  q: '',
+  editingMemberId: null,
+  editingReportId: null,
+  viewingReportId: null,
+  editingPrayerId: null,
+  viewingPrayerId: null,
+  pickerTarget: null,
+  importData: null,
+  importPreview: null,
+  jeuneMounted: false,
+};
+
+/* ---------- Structure vide ---------- */
+function emptyDB(){
+  const d = {
+    v: 3,
+    zone: "Zone spirituelle d'Attiékoi",
+    subzones: [],
+    loc: [],
+    asm: [],
+    members: [],
+    souls: [],
+    acts: [],
+    fin: [],
+    dimes: [],
+    specialCollections: [],
+    reports: [],
+    prayers: [],
+    imp: [],
+  };
+
+  // 3 localités = 3 assemblées (relation 1-1)
+  const locQG      = { id:'loc_qg',      n:'Quartier Général' };
+  const loc04Croix = { id:'loc_04croix', n:'04 Croix' };
+  const locAhoue   = { id:'loc_ahoue',   n:'Ahoué' };
+  d.subzones.push({id:'sz_attiekoi', n:'Sous-zone / Sous-centre principal'});
+  locQG.subzone = 'sz_attiekoi'; loc04Croix.subzone = 'sz_attiekoi'; locAhoue.subzone = 'sz_attiekoi';
+  d.loc.push(locQG, loc04Croix, locAhoue);
+
+  const asmQG      = { id:'asm_qg',      n:'Quartier Général', loc:'loc_qg' };
+  const asm04Croix = { id:'asm_04croix', n:'04 Croix',         loc:'loc_04croix' };
+  const asmAhoue   = { id:'asm_ahoue',   n:'Ahoué',            loc:'loc_ahoue' };
+  d.asm.push(asmQG, asm04Croix, asmAhoue);
+
+  // Les membres seront injectés par le module SEED (message 3)
+  if (typeof SEED_MEMBERS !== 'undefined' && Array.isArray(SEED_MEMBERS)) {
+    SEED_MEMBERS.forEach((m, i) => {
+      d.members.push(Object.assign({
+        id: 'm_' + i,
+        code: '',
+        nom: '',
+        pre: '',
+        cat: 'Adulte',
+        tel: '',
+        conv: '',
+        integration: '',
+        asm: 'asm_qg',
+        fd: '',
+        fdTel: '',
+        hist: [],
+      }, m));
+    });
+  }
+
+  return d;
+}
+
+/* ---------- Chargement & migration ---------- */
+function ensureShape(){
+  db.v = 3;
+  ['subzones','loc','asm','members','souls','acts','fin','dimes','specialCollections','reports','prayers','imp'].forEach(k => {
+    if (!Array.isArray(db[k])) db[k] = [];
+  });
+  if (!db.zone) db.zone = "Zone spirituelle d'Attiékoi";
+  if (!db.subzones.length) db.subzones.push({id:'sz_attiekoi',n:'Sous-zone / Sous-centre principal'});
+  db.loc.forEach(l=>{ if(!l.subzone) l.subzone=db.subzones[0].id; });
+  db.members.forEach(m=>{ if(!m.hist) m.hist=[]; if(!Array.isArray(m.roles)) m.roles = m.role ? [m.role] : []; if(!m.sex) m.sex=''; });
+}
+
+function migrateFromV2(old){
+  // Migration douce : on garde les mêmes clés, on renomme act -> acts
+  const out = {
+    v: 3,
+    zone: old.zone || "Zone spirituelle d'Attiékoi",
+    subzones: old.subzones || [],
+    loc: old.loc || [],
+    asm: old.asm || [],
+    members: old.members || [],
+    souls: old.souls || [],
+    acts: old.acts || old.act || [],
+    fin: old.fin || [],
+    dimes: old.dimes || [],
+    reports: old.reports || [],
+    prayers: old.prayers || [],
+    imp: old.imp || [],
+  };
+  return out;
+}
+
+function migrateFromV1(old){
+  // Migration depuis Suivi de Zone v1 + Compte Rendu
+  const out = emptyDB();
+  out.zone = old.zone || out.zone;
+  out.loc  = old.loc  || out.loc;
+  out.asm  = old.asm  || out.asm;
+  out.subzones = old.subzones || [];
+  out.souls = old.souls || [];
+  out.acts = old.act  || [];
+  out.fin  = old.fin  || [];
+  out.imp  = old.imp  || [];
+
+  (old.dis || []).forEach(d => {
+    out.members.push({
+      id: d.id, code: d.code || '', nom: d.nom || '', pre: d.pre || '',
+      cat: d.cat || 'Adulte', tel: d.tel || '', conv: d.conv || '',
+      bap: d.bap || '', fd: d.fd || '', par: d.par || '',
+      asm: d.asm || '', hist: d.hist || [],
+    });
+  });
+
+  try {
+    const oldM = JSON.parse(localStorage.getItem('cra_members') || '[]');
+    oldM.forEach(m => {
+      if (!out.members.some(x => x.id === m.id)) {
+        out.members.push({
+          id: m.id, code: '', nom: m.nom || '', pre: '',
+          cat: m.categorie || 'Adulte', tel: m.telephone || '',
+          conv: m.dateConversion || '', bap: '', fd: m.discNom || '',
+          par: '', asm: (out.asm[0]||{}).id || '', hist: [],
+        });
+      }
+    });
+    const oldR = JSON.parse(localStorage.getItem('cra_reports') || '[]');
+    oldR.forEach(r => { if (!out.reports.some(x => x.id === r.id)) out.reports.push({...r, asm:(out.asm[0]||{}).id||''}); });
+    const oldP = JSON.parse(localStorage.getItem('cra_prayer') || '[]');
+    oldP.forEach(p => { if (!out.prayers.some(x => x.id === p.id)) out.prayers.push(p); });
+    const oldF = JSON.parse(localStorage.getItem('cra_finance') || '[]');
+    oldF.forEach(f => { if (!out.dimes.some(x => x.id === f.id)) out.dimes.push({...f, asm:(out.asm[0]||{}).id||''}); });
+  } catch(e){}
+
+  return out;
+}
+
+function loadDB(){
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch(e){}
+  if (raw && raw.v === 3) { db = raw; ensureShape(); return; }
+
+  // Tenter migration depuis v2 puis v1
+  let old2 = null, old1 = null;
+  try { old2 = JSON.parse(localStorage.getItem('suivi_zone_v2')); } catch(e){}
+  try { old1 = JSON.parse(localStorage.getItem('suivi_zone_v1')); } catch(e){}
+
+  if (old2 && old2.v === 2) { db = migrateFromV2(old2); }
+  else if (old1)            { db = migrateFromV1(old1); }
+  else                      { db = emptyDB(); }
+
+  ensureShape();
+  persist();
+}
+
+function persist(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    const dayKey = 'bak_' + STORAGE_KEY + '_' + today();
+    if (!localStorage.getItem(dayKey)) {
+      localStorage.setItem(STORAGE_KEY + '_bak', JSON.stringify(db));
+      localStorage.setItem(dayKey, '1');
+    }
+  } catch(e) {
+    toast('⚠ Stockage plein ou bloqué. Exportez une sauvegarde.', 5000);
+  }
+}
+
+/* ---------- Helpers métier ---------- */
+const asmName = id => (db.asm.find(a => a.id === id) || {}).n || '—';
+const memberName = id => {
+  const m = db.members.find(x => x.id === id);
+  if (!m) return '—';
+  return [m.nom, m.pre].filter(Boolean).join(' ') || m.nom || '—';
+};
+const asmOptions = v => db.asm.map(a => `<option value="${esc(a.id)}"${a.id===v?' selected':''}>${esc(a.n)}</option>`).join('') || '<option value="">— (créez une assemblée) —</option>';
+const memberOptions = v => [...db.members]
+  .sort((a,b)=>memberName(a.id).localeCompare(memberName(b.id)))
+  .map(m => `<option value="${esc(m.id)}"${m.id===v?' selected':''}>${esc(memberName(m.id))}</option>`).join('')
+  || '<option value="">— (ajoutez des membres) —</option>';
+
+/* ---------- Navigation ---------- */
+const TABS = [
+  ['home','🏠','Accueil et tableau de bord'],
+  ['members','👥','Membres / disciples'],
+  ['rencontres','📅','Rencontres et comptes rendus'],
+  ['souls','💚','Évangélisation et suivi des âmes'],
+  ['finance','💰','Finances et collectes'],
+  ['structure','⛪','Organisation de la zone'],
+  ['transfer','🔄','Transfert et administration'],
+];
+
+const TAB_SUB = {
+  stats:'Indicateurs et bilan par assemblée', disciples:'Fiches de disciples et recherche',
+  rencontres:'Cultes, adorations, prières et activités', jeune:'Intentions et suivi du jeûne',
+  members:'Liste filtrable des membres et suivi des absences', 'member-form':'Enregistrement ou modification d’un membre',
+  souls:'Invités, étapes spirituelles et intégration', finance:'Dîmes, offrandes, autres dons et collectes spéciales',
+  structure:'Zone, sous-zones, localités et assemblées', transfer:'Export, import, sauvegardes et rapports consolidés',
+  activities:'Autres activités', reports:'Culte / adoration', prayers:'Réunions de prière',
+  'report-form':'Compte rendu de culte','report-view':'Compte rendu','prayer-form':'Réunion de prière','prayer-view':'Réunion de prière'
+};
+function renderNav(){
+  const wrap = $$('tabsWrap'), nav = $$('mainTabs');
+  document.body.classList.toggle('on-home', state.tab === 'home');
+  const grid = $$('homeGrid');
+  if (grid) grid.innerHTML = TABS.filter(t => t[0] !== 'home').map(([k,i,l]) =>
+    `<button class="home-card${k==='members'?' wide':''}" data-tab="${k}"><span class="ico">${i}</span><span class="tx"><b>${l}</b><small>${TAB_SUB[k]||''}</small></span></button>`
+  ).join('') + `<button class="home-card" data-tab="stats"><span class="ico">📊</span><span class="tx"><b>Tableau de bord détaillé</b><small>Indicateurs et bilan rapide par assemblée</small></span></button>`;
+  if (grid) grid.querySelectorAll('button').forEach(b => { b.onclick = () => go(b.dataset.tab); });
+  if (state.tab === 'home') { wrap.hidden = true; nav.innerHTML = ''; return; }
+  wrap.hidden = false;
+  const cur = TABS.find(t => t[0] === state.tab);
+  nav.className = 'backbar';
+  nav.innerHTML = `<button class="btn" data-tab="home">⬅ Accueil</button><span>${cur ? cur[1] + ' ' + cur[2] : (TAB_SUB[state.tab]||'')}</span>`;
+  nav.querySelector('button').onclick = () => go('home');
+}
+
+function go(tab, fromHistory=false){
+  if (!fromHistory && state.tab !== tab) {
+    state.navHistory.push(state.tab);
+    if (state.navHistory.length > 60) state.navHistory.shift();
+  }
+  state.tab = tab;
+  document.querySelectorAll('main > section[id^="tab-"]').forEach(s => { s.hidden = s.id !== 'tab-' + tab; });
+  ['report-form','report-view','prayer-form','prayer-view'].forEach(k => {
+    const s = $$('tab-' + k);
+    if (s) s.hidden = true;
+  });
+  renderNav();
+  scrollTo(0, 0);
+  const renderers = {
+    home: renderHome,
+    stats: renderHome,
+    disciples: renderDisciples,
+    rencontres: renderRencontres,
+    activities: renderActivities,
+    reports: renderReports,
+    prayers: renderPrayers,
+    jeune: renderJeune,
+    members: renderMembers,
+    'member-form': renderMemberForm,
+    souls: renderSouls,
+    finance: () => { renderFinance(); renderDimes(); },
+    structure: renderStructure,
+    transfer: renderTransfer,
+  };
+  if (renderers[tab]) renderers[tab]();
+  if(tab==='finance') renderSpecialCollections();
+}
+
+function showSub(tab){
+  if (state.tab !== tab) { state.navHistory.push(state.tab); if (state.navHistory.length > 60) state.navHistory.shift(); }
+  state.tab = tab;
+  document.querySelectorAll('main > section[id^="tab-"]').forEach(s => { s.hidden = true; });
+  ['report-form','report-view','prayer-form','prayer-view'].forEach(k => {
+    const s = $$('tab-' + k);
+    if (s) s.hidden = (k !== tab);
+  });
+  renderNav();
+  scrollTo(0, 0);
+}
+
+function goBackGlobal(){
+  const previous = state.navHistory.pop();
+  if (previous) { go(previous, true); return; }
+  if (state.tab !== 'home') { go('home', true); return; }
+  toast('Vous êtes déjà à l’accueil.');
+}
+
+function renderRencontres(){
+  const el=$$('tab-rencontres'); if(!el)return;
+  el.querySelectorAll('[data-meeting-dest]').forEach(b=>b.onclick=()=>go(b.dataset.meetingDest));
+}
+
+/* ---------- Accueil ---------- */
+function reportTotal(r){
+  const checked = r.presentIds || [];
+  const inv = (r.invitesNoms || '').split('\n').filter(s => s.trim()).length;
+  const enf = db.members.filter(m => checked.includes(m.id) && m.cat === 'Enfant').length;
+  const adu = db.members.filter(m => checked.includes(m.id) && m.cat === 'Adulte').length;
+  return enf + adu + inv;
+}
+
+function renderHome(){
+  $$('homeZoneName').textContent = db.zone || "Zone spirituelle d'Attiékoi";
+  $$('tbTitle').textContent = '✝ Suivi de Zone';
+  $$('tbSub').textContent = (db.zone || '') + ' · ' + db.members.length + ' membres';
+
+  const cu = [...db.reports].sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  const L = cu.slice(-8);
+  const mx = Math.max(1, ...L.map(r => reportTotal(r)));
+  const rec = db.fin.filter(f => f.type === 'Recette').reduce((s,f) => s + f.mt, 0)
+            + db.dimes.reduce((s,f) => s + (+f.dime||0) + (+f.offrande||0), 0);
+  const dep = db.fin.filter(f => f.type !== 'Recette').reduce((s,f) => s + f.mt, 0);
+  const lc = cu[cu.length - 1];
+  const avg = cu.length ? Math.round(cu.reduce((s,r) => s + reportTotal(r), 0) / cu.length) : 0;
+
+  $$('homeKp').innerHTML = `
+    <div><b>${fr(db.members.length)}</b><span>Membres</span></div>
+    <div><b>${avg}</b><span>Présence moyenne</span></div>
+    <div><b>${lc ? (lc.nbCene||0) : 0}</b><span>Sainte Cène (dernier)</span></div>
+    <div><b>${fr(rec-dep)}</b><span>Solde (FCFA)</span></div>
+    <div><b>${db.acts.length}</b><span>Activités</span></div>
+    <div><b>${db.prayers.length}</b><span>Prières</span></div>
+  `;
+
+  $$('homeBilan').innerHTML = `<table class="grid-table">
+    <thead><tr><th>Assemblée</th><th>Membres</th><th>Cultes</th><th>Solde</th></tr></thead>
+    <tbody>
+      ${db.asm.map(a => {
+        const s = db.fin.filter(f => f.asm === a.id).reduce((t,f) => t + (f.type === 'Recette' ? f.mt : -f.mt), 0)
+                + db.dimes.filter(f => f.asm === a.id).reduce((t,f) => t + (+f.dime||0) + (+f.offrande||0), 0);
+        return `<tr>
+          <td><b>${esc(a.n)}</b></td>
+          <td>${db.members.filter(x => x.asm === a.id).length}</td>
+          <td>${db.reports.filter(x => x.asm === a.id).length}</td>
+          <td><b>${fr(s)}</b></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4" class="empty">Commencez par « Structure ».</td></tr>'}
+    </tbody>
+  </table>`;
+}
+
+/* ---------- Disciples ---------- */
+function renderDisciples(){
+  const q = (state.q || '').toLowerCase();
+  const L = db.members.filter(m =>
+    [m.code, m.nom, m.pre, m.tel, memberName(m.id)].join(' ').toLowerCase().includes(q)
+  ).sort((a,b) => memberName(a.id).localeCompare(memberName(b.id)));
+
+  const list = $$('disciplesList');
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucun disciple trouvé.</div>';
+    $$('disciplesPrintTable').innerHTML = '';
+    return;
+  }
+  list.innerHTML = L.map(d => `
+    <div class="list-item">
+      <div class="top">
+        <span>${esc(d.code || '—')} · ${esc(memberName(d.id))}</span>
+        <span>
+          ${d.cat === 'Enfant' ? '<span class="tag">Enfant</span>' : ''}
+          ${(d.hist||[]).length ? '<span class="tag warn">↔ transféré</span>' : ''}
+        </span>
+      </div>
+      <div class="meta">
+        ${d.tel ? '📞 ' + esc(d.tel) + ' · ' : ''}
+        Assemblée : ${esc(asmName(d.asm))}
+      </div>
+      <div class="actions">
+        <button class="btn ghost sm" data-edit-disc="${d.id}">✏️ Modifier</button>
+        <button class="btn danger sm" data-del-disc="${d.id}">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-edit-disc]').forEach(b => {
+    b.onclick = () => startEditMember(b.dataset.editDisc);
+  });
+  list.querySelectorAll('[data-del-disc]').forEach(b => {
+    b.onclick = () => {
+      confirmAction('Supprimer ce disciple ?', () => {
+        db.members = db.members.filter(m => m.id !== b.dataset.delDisc);
+        persist();
+        renderDisciples();
+      });
+    };
+  });
+  $$('disciplesPrintTable').innerHTML = '<tr><th>Code</th><th>Nom</th><th>Assemblée</th><th>Téléphone</th></tr>' +
+    L.map(d => `<tr><td>${esc(d.code||'')}</td><td>${esc(memberName(d.id))}</td><td>${esc(asmName(d.asm))}</td><td>${esc(d.tel||'')}</td></tr>`).join('');
+}
+
+/* ---------- Activités ---------- */
+function renderActivities(){
+  const list = $$('activitiesList');
+  const L = [...db.acts].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucune activité enregistrée.</div>';
+    $$('activitiesPrintTable').innerHTML = '';
+    return;
+  }
+  list.innerHTML = L.map(a => `
+    <div class="list-item">
+      <div class="top">
+        <span>${esc(a.type || 'Activité')} — ${fmtDate(a.date)}</span>
+        <span class="tag ${a.st === 'validé' ? 'ok' : a.st === 'incomplet' ? 'warn' : ''}">${esc(a.st || 'reçu')}</span>
+      </div>
+      <div class="meta">${esc(asmName(a.asm))}${a.theme ? ' · ' + esc(a.theme) : ''} · Effectif ${fr(tot(a))}</div>
+      <div class="actions">
+        <button class="btn ghost sm" data-edit-act="${a.id}">✏️</button>
+        ${a.st !== 'validé' ? `<button class="btn sm" data-valid-act="${a.id}">✓ Valider</button>` : ''}
+        <button class="btn danger sm" data-del-act="${a.id}">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-edit-act]').forEach(b => {
+    b.onclick = () => activityForm(b.dataset.editAct);
+  });
+  list.querySelectorAll('[data-valid-act]').forEach(b => {
+    b.onclick = () => {
+      const a = db.acts.find(x => x.id === b.dataset.validAct);
+      if (a) { a.st = 'validé'; persist(); renderActivities(); }
+    };
+  });
+  list.querySelectorAll('[data-del-act]').forEach(b => {
+    b.onclick = () => {
+      confirmAction('Supprimer cette activité ?', () => {
+        db.acts = db.acts.filter(x => x.id !== b.dataset.delAct);
+        persist();
+        renderActivities();
+      });
+    };
+  });
+  $$('activitiesPrintTable').innerHTML = '<tr><th>Date</th><th>Type</th><th>Assemblée</th><th>Effectif</th><th>Statut</th></tr>' +
+    L.map(a => `<tr><td>${fmtDate(a.date)}</td><td>${esc(a.type||'')}</td><td>${esc(asmName(a.asm))}</td><td>${tot(a)}</td><td>${esc(a.st||'')}</td></tr>`).join('');
+}
+
+function activityForm(id){
+  if (!db.asm.length) { alert("Créez d'abord une assemblée dans « Structure »."); return; }
+  const a = id ? db.acts.find(x => x.id === id) : { type: 'Culte', date: today(), asm: db.asm[0].id };
+  showSheet(`<h3>${id ? "Modifier l'activité" : 'Nouvelle activité'}</h3>
+    <div class="row">
+      <div><label>Type</label><select id="afType">${TYPES_ACT.map(t => `<option${t===a.type?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div><label>Date</label><input type="date" id="afDate" value="${esc(a.date||'')}"></div>
+    </div>
+    <label>Assemblée</label><select id="afAsm">${asmOptions(a.asm)}</select>
+    <label>Thème / référence biblique</label><input id="afTheme" value="${esc(a.theme||'')}">
+    <label>Responsable</label><input id="afResp" value="${esc(a.resp||'')}">
+    <div class="row3">
+      <div><label>Hommes</label><input type="number" min="0" id="afH" value="${a.h||0}"></div>
+      <div><label>Femmes</label><input type="number" min="0" id="afF" value="${a.f||0}"></div>
+      <div><label>Enfants</label><input type="number" min="0" id="afE" value="${a.e||0}"></div>
+    </div>
+    <div class="row">
+      <div><label>Sainte Cène</label><input type="number" min="0" id="afSc" value="${a.sc||0}"></div>
+      <div><label>Baptêmes</label><input type="number" min="0" id="afBap" value="${a.bap||0}"></div>
+    </div>
+    <div class="flex-between" style="margin-top:16px;">
+      <span>${id ? `<button class="btn danger sm" onclick="deleteActivity('${id}')">Supprimer</button>` : ''}</span>
+      <span style="display:flex;gap:8px;">
+        <button class="btn ghost" onclick="closeSheet()">Annuler</button>
+        <button class="btn" onclick="saveActivity('${id||''}')">Enregistrer</button>
+      </span>
+    </div>
+  `);
+}
+
+function saveActivity(id){
+  const data = {
+    id: id || uid(),
+    type: $$('afType').value,
+    date: $$('afDate').value,
+    asm: $$('afAsm').value,
+    theme: $$('afTheme').value.trim(),
+    resp: $$('afResp').value.trim(),
+    h: +$$('afH').value||0,
+    f: +$$('afF').value||0,
+    e: +$$('afE').value||0,
+    sc: +$$('afSc').value||0,
+    bap: +$$('afBap').value||0,
+  };
+  if (!data.date) { alert('Date requise.'); return; }
+  data.st = (data.h+data.f+data.e > 0 && data.theme) ? 'reçu' : 'incomplet';
+  const i = db.acts.findIndex(x => x.id === data.id);
+  if (i > -1) db.acts[i] = data; else db.acts.push(data);
+  persist();
+  closeSheet();
+  renderActivities();
+}
+
+function deleteActivity(id){
+  confirmAction('Supprimer cette activité ?', () => {
+    db.acts = db.acts.filter(x => x.id !== id);
+    persist();
+    closeSheet();
+    renderActivities();
+  });
+}
+
+/* ---------- Finances ---------- */
+function renderFinance(){
+  $$('financeBilan').innerHTML = `<table class="grid-table">
+    <thead><tr><th>Assemblée</th><th>Recettes</th><th>Dépenses</th><th>Solde</th></tr></thead>
+    <tbody>
+      ${db.asm.map(a => {
+        const r = db.fin.filter(f => f.asm === a.id && f.type === 'Recette').reduce((s,f) => s + f.mt, 0)
+                + db.dimes.filter(f => f.asm === a.id).reduce((s,f) => s + (+f.dime||0) + (+f.offrande||0), 0)
+                + (db.specialCollections||[]).filter(f=>f.asm===a.id).reduce((s,f)=>s+(+f.amount||0),0);
+        const d = db.fin.filter(f => f.asm === a.id && f.type !== 'Recette').reduce((s,f) => s + f.mt, 0);
+        return `<tr><td>${esc(a.n)}</td><td>${fr(r)}</td><td>${fr(d)}</td><td><b>${fr(r-d)}</b></td></tr>`;
+      }).join('') || '<tr><td colspan="4" class="empty">Aucune assemblée.</td></tr>'}
+    </tbody>
+  </table>`;
+
+  const L = [...db.fin].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const list = $$('globalFinList');
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucune opération.</div>';
+  } else {
+    list.innerHTML = L.map(f => `
+      <div class="list-item">
+        <div class="top">
+          <span>${esc(f.cat)} — ${fmtDate(f.date)}</span>
+          <span style="color:${f.type==='Recette'?'var(--ok)':'var(--danger)'};">
+            <b>${f.type==='Recette'?'+':'−'}${fr(f.mt)}</b>
+          </span>
+        </div>
+        <div class="meta">${esc(asmName(f.asm))}${f.note ? ' · ' + esc(f.note) : ''}</div>
+        <div class="actions">
+          <button class="btn ghost sm" data-edit-fin="${f.id}">✏️</button>
+          <button class="btn danger sm" data-del-fin="${f.id}">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-edit-fin]').forEach(b => b.onclick = () => financeForm(b.dataset.editFin));
+    list.querySelectorAll('[data-del-fin]').forEach(b => {
+      b.onclick = () => {
+        confirmAction('Supprimer cette opération ?', () => {
+          db.fin = db.fin.filter(x => x.id !== b.dataset.delFin);
+          persist();
+          renderFinance();
+        });
+      };
+    });
+  }
+  $$('globalFinPrintTable').innerHTML = '<tr><th>Date</th><th>Nature</th><th>Catégorie</th><th>Assemblée</th><th>Montant</th></tr>' +
+    L.map(f => `<tr><td>${fmtDate(f.date)}</td><td>${f.type}</td><td>${esc(f.cat)}</td><td>${esc(asmName(f.asm))}</td><td>${fr(f.mt)}</td></tr>`).join('');
+}
+
+function financeForm(id){
+  if (!db.asm.length) { alert("Créez d'abord une assemblée."); return; }
+  const f = id ? db.fin.find(x => x.id === id) : { date: today(), asm: db.asm[0].id, type: 'Recette', cat: 'Offrande' };
+  showSheet(`<h3>${id ? "Modifier l'opération" : 'Nouvelle opération'}</h3>
+    <div class="row">
+      <div><label>Date</label><input type="date" id="ffDate" value="${esc(f.date||'')}"></div>
+      <div><label>Nature</label><select id="ffType"><option${f.type==='Recette'?' selected':''}>Recette</option><option${f.type!=='Recette'?' selected':''}>Dépense</option></select></div>
+    </div>
+    <label>Assemblée</label><select id="ffAsm">${asmOptions(f.asm)}</select>
+    <label>Rubrique financière</label><select id="ffCat">${allFinCats().map(c => `<option${c===f.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>
+    <label>Ajouter une rubrique non répertoriée (facultatif)</label><input id="ffCatCustom" placeholder="Saisir une nouvelle rubrique si nécessaire" value="">
+    <p class="text-small text-muted">La liste n’est pas exhaustive : une rubrique ajoutée sera conservée et proposée lors des prochaines opérations.</p>
+    <label>Montant (FCFA)</label><input type="number" min="1" id="ffMt" value="${f.mt||''}">
+    <label>Justificatif / commentaire</label><textarea id="ffNote">${esc(f.note||'')}</textarea>
+    <div class="flex-between" style="margin-top:16px;">
+      <span>${id ? `<button class="btn danger sm" onclick="deleteFinance('${id}')">Supprimer</button>` : ''}</span>
+      <span style="display:flex;gap:8px;">
+        <button class="btn ghost" onclick="closeSheet()">Annuler</button>
+        <button class="btn" onclick="saveFinance('${id||''}')">Enregistrer</button>
+      </span>
+    </div>
+  `);
+}
+
+function saveFinance(id){
+  const mt = +$$('ffMt').value || 0;
+  if (mt <= 0) { alert('Montant > 0 requis.'); return; }
+  const data = {
+    id: id || uid(),
+    date: $$('ffDate').value,
+    type: $$('ffType').value,
+    asm: $$('ffAsm').value,
+    cat: ($$('ffCatCustom')?.value.trim() || $$('ffCat').value),
+    mt,
+    note: $$('ffNote').value.trim(),
+  };
+  const i = db.fin.findIndex(x => x.id === data.id);
+  if (i > -1) db.fin[i] = data; else db.fin.push(data);
+  persist();
+  closeSheet();
+  renderFinance();
+}
+
+function deleteFinance(id){
+  confirmAction('Supprimer cette opération ?', () => {
+    db.fin = db.fin.filter(x => x.id !== id);
+    persist();
+    closeSheet();
+    renderFinance();
+  });
+}
+
+/* ---------- Dîmes ---------- */
+function renderDimes(){
+  $$('dimeMember').innerHTML = memberOptions();
+  $$('dimeAsm').innerHTML = asmOptions((db.asm[0]||{}).id);
+  if (!$$('dimeDate').value) $$('dimeDate').value = today();
+
+  const L = [...db.dimes].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const list = $$('dimesList');
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucun enregistrement.</div>';
+  } else {
+    list.innerHTML = L.map(f => `
+      <div class="list-item">
+        <div class="top">
+          <span>${esc(memberName(f.memberId))}</span>
+          <span class="tag">${fmtDate(f.date)}</span>
+        </div>
+        <div class="meta">Dîme : ${fr(f.dime)} · Offrande : ${fr(f.offrande)} · ${esc(asmName(f.asm))}</div>
+        <div class="actions">
+          <button class="btn danger sm" data-del-dime="${f.id}">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-del-dime]').forEach(b => {
+      b.onclick = () => {
+        confirmAction('Supprimer cet enregistrement ?', () => {
+          db.dimes = db.dimes.filter(x => x.id !== b.dataset.delDime);
+          persist();
+          renderDimes();
+        });
+      };
+    });
+  }
+  $$('dimesPrintTable').innerHTML = '<tr><th>Date</th><th>Membre</th><th>Dîme</th><th>Offrande</th><th>Assemblée</th></tr>' +
+    L.map(f => `<tr><td>${fmtDate(f.date)}</td><td>${esc(memberName(f.memberId))}</td><td>${fr(f.dime)}</td><td>${fr(f.offrande)}</td><td>${esc(asmName(f.asm))}</td></tr>`).join('');
+}
+
+/* ---------- Collectes spéciales ---------- */
+function renderSpecialCollections(){
+  if(!db.specialCollections)db.specialCollections=[];
+  const asm=$$('scAsm');if(asm){const old=asm.value;asm.innerHTML=asmOptions(old||((db.asm[0]||{}).id));}
+  if($$('scDate')&&!$$('scDate').value)$$('scDate').value=today();
+  const L=[...db.specialCollections].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  $$('specialCollectionsList').innerHTML=L.length?L.map(x=>`<div class="list-item"><div class="top"><b>${esc(x.title)}</b><span class="tag">${fr(x.amount)} FCFA</span></div><div class="meta">${fmtDate(x.date)} · ${esc(asmName(x.asm))}${x.donor?' · Donateur : '+esc(x.donor):''}${x.note?' · '+esc(x.note):''}</div><div class="actions"><button class="btn danger sm" data-del-sc="${esc(x.id)}">Supprimer</button></div></div>`).join(''):'<div class="empty">Aucune collecte spéciale enregistrée.</div>';
+  $$('specialCollectionsList').querySelectorAll('[data-del-sc]').forEach(b=>b.onclick=()=>confirmAction('Supprimer cette collecte spéciale ?',()=>{db.specialCollections=db.specialCollections.filter(x=>x.id!==b.dataset.delSc);persist();renderSpecialCollections();renderFinance();}));
+  $$('specialCollectionsPrintTable').innerHTML='<tr><th>Date</th><th>Collecte</th><th>Donateur</th><th>Objet</th><th>Assemblée</th><th>Montant (FCFA)</th></tr>'+L.map(x=>`<tr><td>${fmtDate(x.date)}</td><td>${esc(x.title)}</td><td>${esc(x.donor||'')}</td><td>${esc(x.note||'')}</td><td>${esc(asmName(x.asm))}</td><td>${fr(x.amount)}</td></tr>`).join('');
+}
+function saveSpecialCollection(){
+  const title=$$('scTitle').value.trim(),amount=+$$('scAmount').value;
+  if(!title)return alert('Le nom de la collecte est requis.');
+  if(!(amount>0))return alert('Saisissez un montant supérieur à zéro.');
+  db.specialCollections.push({id:uid(),date:$$('scDate').value||today(),asm:$$('scAsm').value,title,amount,donor:$$('scDonor').value.trim(),note:$$('scNote').value.trim()});
+  persist();['scTitle','scAmount','scDonor','scNote'].forEach(id=>$$(id).value='');renderSpecialCollections();renderFinance();toast('✓ Collecte spéciale enregistrée');
+}
+
+/* ---------- Membres ---------- */
+function getUnjustifiedAbsenceStreak(member){
+  const reports = db.reports
+    .filter(r => r.asm === member.asm && r.date)
+    .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  let streak = 0;
+  const details = [];
+  for (const r of reports) {
+    const present = (r.presentIds || []).includes(member.id);
+    if (present) break;
+    const absence = (r.absences || []).find(a => a.memberId === member.id);
+    // On ne compte comme absence sans justification que le cas explicitement indiqué
+    // comme non annoncé et sans motif renseigné.
+    const unjustified = !!absence && absence.notice === 'aucun' && !(absence.motif || '').trim();
+    if (!unjustified) break;
+    streak++;
+    details.push(r.date);
+  }
+  return {streak, dates:details};
+}
+
+function renderRetrogrades(){
+  const list = $$('retrogradesList');
+  if (!list) return;
+  const flagged = db.members.map(m => ({m, ...getUnjustifiedAbsenceStreak(m)}))
+    .filter(x => x.streak >= 4)
+    .sort((a,b) => b.streak-a.streak || memberName(a.m.id).localeCompare(memberName(b.m.id)));
+  if (!flagged.length) {
+    list.innerHTML = '<div class="empty">Aucun membre ne remplit actuellement ce critère dans les comptes rendus enregistrés.</div>';
+    $$('retrogradesPrintTable').innerHTML = '';
+    return;
+  }
+  list.innerHTML = flagged.map(({m,streak,dates}) => `<div class="list-item"><div class="top"><b>${esc(memberName(m.id))}</b><span class="tag" style="background:#a00;color:#fff;">${streak} cultes</span></div><div class="meta">Assemblée : ${esc(asmName(m.asm))} · Dernier culte concerné : ${fmtDate(dates[0])}</div><div class="meta">Absences non annoncées sans motif sur les cultes enregistrés : ${dates.map(fmtDate).join(', ')}</div><div class="actions"><button class="btn ghost sm" data-retro-member="${esc(m.id)}">Ouvrir la fiche du membre</button></div></div>`).join('');
+  list.querySelectorAll('[data-retro-member]').forEach(b => b.onclick = () => startEditMember(b.dataset.retroMember));
+  $$('retrogradesPrintTable').innerHTML = '<tr><th>N°</th><th>Membre</th><th>Assemblée</th><th>Cultes consécutifs</th><th>Dates concernées</th></tr>' + flagged.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(memberName(x.m.id))}</td><td>${esc(asmName(x.m.asm))}</td><td>${x.streak}</td><td>${x.dates.map(fmtDate).join(', ')}</td></tr>`).join('');
+}
+
+function roleOptionsHtml(selected=[]){
+  return MEMBER_ROLES.map(r=>`<label class="role-check"><input type="checkbox" name="memberRoleChoice" value="${esc(r)}" ${selected.includes(r)?'checked':''}> <span>${esc(r)}</span></label>`).join('');
+}
+function selectedMemberRoles(){
+  const vals=[...document.querySelectorAll('input[name="memberRoleChoice"]:checked')].map(x=>x.value);
+  const other=($$('mRoleOther')?.value||'').trim();
+  if(other) other.split(',').map(x=>x.trim()).filter(Boolean).forEach(r=>{if(!vals.includes(r))vals.push(r)});
+  return vals;
+}
+function renderMembers(){
+  const list=$$('membersList');
+  const filter=$$('membersAssemblyFilter');
+  const previous={asm:filter?.value||'',cat:$$('membersCategoryFilter')?.value||'',sex:$$('membersSexFilter')?.value||'',role:$$('membersRoleFilter')?.value||''};
+  if(filter) filter.innerHTML='<option value="">Toutes les assemblées</option>'+db.asm.map(a=>`<option value="${esc(a.id)}">${esc(a.n)}</option>`).join('');
+  if(filter) filter.value=db.asm.some(a=>a.id===previous.asm)?previous.asm:'';
+  const cf=$$('membersCategoryFilter'), sf=$$('membersSexFilter'), rf=$$('membersRoleFilter');
+  if(cf) cf.value=previous.cat;
+  if(sf) sf.value=previous.sex;
+  if(rf){rf.innerHTML='<option value="">Toutes les fonctions</option>'+MEMBER_ROLES.map(r=>`<option>${esc(r)}</option>`).join('')+[...new Set(db.members.flatMap(m=>m.roles||[]).filter(r=>!MEMBER_ROLES.includes(r)))].map(r=>`<option>${esc(r)}</option>`).join('');rf.value=previous.role;}
+  const chosenAsm=filter?.value||'', chosenCat=cf?.value||'', chosenSex=sf?.value||'', chosenRole=rf?.value||'';
+  const sorted=[...db.members].filter(m=>(!chosenAsm||m.asm===chosenAsm)&&(!chosenCat||(m.cat||'Adulte')===chosenCat)&&(!chosenSex||(m.sex||'')===chosenSex)&&(!chosenRole||(m.roles||[]).includes(chosenRole)||m.role===chosenRole)).sort((a,b)=>memberName(a.id).localeCompare(memberName(b.id)));
+  $$('memberCount').textContent=sorted.length;
+  if(!sorted.length){list.innerHTML='<div class="empty">Aucun membre pour cette sélection.</div>';$$('membersPrintTable').innerHTML='<tr><th>N°</th><th>Nom</th><th>Catégorie</th><th>Sexe</th><th>Fonction(s)</th><th>Téléphone</th><th>Assemblée</th></tr>';}
+  else {
+    list.innerHTML=sorted.map((m,i)=>{const roles=Array.isArray(m.roles)?m.roles:(m.role?[m.role]:[]);return `<div class="list-item"><div class="top"><span>${i+1}. ${esc(memberName(m.id))}</span><span class="tag">${esc(m.cat||'Adulte')}${m.sex?' · '+esc(m.sex):''}</span></div><div class="meta">${m.tel?'📞 '+esc(m.tel)+' · ':''}${m.conv?'Conversion : '+fmtDate(m.conv)+' · ':''}${m.fd?'Faiseur : '+esc(m.fd):''}</div><div class="meta">Fonction(s) : ${roles.length?roles.map(esc).join(', '):'Non renseignée'} · Assemblée : ${esc(asmName(m.asm))}</div><div class="actions"><button class="btn ghost sm" data-edit="${esc(m.id)}">✏️ Modifier</button><button class="btn danger sm" data-del="${esc(m.id)}">🗑️</button></div></div>`}).join('');
+    list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>startEditMember(b.dataset.edit));
+    list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>confirmAction('Supprimer ce membre ?',()=>{db.members=db.members.filter(m=>m.id!==b.dataset.del);persist();renderMembers();}));
+    $$('membersPrintTable').innerHTML='<tr><th>N°</th><th>Nom</th><th>Catégorie</th><th>Sexe</th><th>Fonction(s)</th><th>Téléphone</th><th>Conversion</th><th>Assemblée</th></tr>'+sorted.map((m,i)=>`<tr><td>${i+1}</td><td>${esc(memberName(m.id))}</td><td>${esc(m.cat||'')}</td><td>${esc(m.sex||'')}</td><td>${esc((m.roles||[]).join(', ')||m.role||'')}</td><td>${esc(m.tel||'')}</td><td>${fmtDate(m.conv)}</td><td>${esc(asmName(m.asm))}</td></tr>`).join('');
+  }
+  renderRetrogrades();
+}
+function renderMemberForm(){
+  const chosen=db.members.find(m=>m.id===state.editingMemberId);
+  const roleBox=$$('memberRolesForm'); if(roleBox) roleBox.innerHTML=roleOptionsHtml(chosen?.roles||(chosen?.role?[chosen.role]:[]));
+  const mAsm=$$('mAsm'); if(mAsm){ const keep=chosen?.asm||mAsm.value||((db.asm[0]||{}).id); mAsm.innerHTML=asmOptions(keep); }
+}
+function startEditMember(id){
+  const m = db.members.find(x => x.id === id);
+  if (!m) return;
+  state.editingMemberId = id;
+  $$('memberFormTitle').textContent = 'Modifier le membre';
+  $$('mNom').value = memberName(m.id);
+  $$('mCat').value = m.cat || 'Adulte';
+  $$('mSex').value = m.sex || '';
+  $$('mRoleOther').value = (m.roles||[]).filter(r=>!MEMBER_ROLES.includes(r)).join(', ');
+  $$('mTel').value = m.tel || '';
+  $$('mConv').value = m.conv || '';
+  $$('mIntegration').value = m.integration || '';
+  $$('mAsm').innerHTML = asmOptions(m.asm);
+  $$('mDiscNom').value = m.fd || '';
+  $$('mDiscTel').value = m.fdTel || '';
+  $$('memberRolesForm').innerHTML = roleOptionsHtml(m.roles || (m.role?[m.role]:[]));
+  $$('btnAddMember').textContent = 'Enregistrer';
+  $$('btnCancelMemberEdit').hidden = false;
+  go('member-form');
+  $$('mNom').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function resetMemberForm(){
+  state.editingMemberId = null;
+  $$('memberFormTitle').textContent = 'Ajouter un membre';
+  $$('btnAddMember').textContent = 'Ajouter';
+  $$('btnCancelMemberEdit').hidden = true;
+  ['mNom','mTel','mConv','mIntegration','mDiscNom','mDiscTel'].forEach(id => $$(id).value = '');
+  $$('mCat').value = 'Adulte';
+  $$('mSex').value = '';
+  $$('mRoleOther').value = '';
+  if($$('memberRolesForm')) $$('memberRolesForm').innerHTML = roleOptionsHtml([]);
+  $$('mAsm').innerHTML = asmOptions((db.asm[0]||{}).id);
+}
+
+/* ---------- Suivi des âmes / invités ---------- */
+let editingSoulId = null;
+function renderSoulMinistryChoices(selected=[]){
+  document.querySelectorAll('input[name="soulMinistry"]').forEach(cb=>cb.checked=selected.includes(cb.value));
+}
+function getSelectedSoulMinistries(){return [...document.querySelectorAll('input[name="soulMinistry"]:checked')].map(cb=>cb.value);}
+const SOUL_REQUIRED_MINISTRIES=['Conduit à Christ','Conduit à la repentance','Baptisé d’eau','Brisement de liens malsains'];
+function qualifyingFourSundayDate(dates=[]){
+  const ds=[...new Set(dates.filter(Boolean))].sort();
+  let streak=1;
+  for(let i=1;i<ds.length;i++){
+    const a=new Date(ds[i-1]+'T12:00:00Z'),b=new Date(ds[i]+'T12:00:00Z');
+    if(a.getUTCDay()===0 && b.getUTCDay()===0 && (b-a)===7*24*60*60*1000) streak++;
+    else streak=1;
+    if(streak>=4) return ds[i];
+  }
+  return '';
+}
+function hasFourConsecutiveSundays(dates=[]){return !!qualifyingFourSundayDate(dates);}
+function autoIntegrateSoul(soul){
+  if(!SOUL_REQUIRED_MINISTRIES.every(m=>(soul.ministries||[]).includes(m)))return false;
+  const sundays=[...new Set(soul.sundayAttendance||[])].sort();
+  const integrationDate=qualifyingFourSundayDate(sundays);
+  if(!integrationDate)return false;
+  if(soul.stage!=='Intégré dans une assemblée'){
+    soul.stage='Intégré dans une assemblée';soul.stageDate=integrationDate;soul.history=soul.history||[];
+    if(!soul.history.some(h=>h.stage==='Intégré dans une assemblée'))soul.history.push({date:integrationDate,stage:'Intégré dans une assemblée',asm:soul.asm,automatic:true});
+  }
+  let member=db.members.find(m=>m.sourceSoulId===soul.id);
+  if(!member){
+    const sameName=m=>(memberName(m.id)||'').trim().toLocaleLowerCase()===soul.name.trim().toLocaleLowerCase();
+    member=db.members.find(m=>(soul.tel&&(m.tel||'').replace(/\s/g,'')===soul.tel.replace(/\s/g,''))||(!soul.tel&&sameName(m)&&m.asm===soul.asm));
+  }
+  if(!member){db.members.push({id:uid(),code:'AME'+Math.random().toString(36).slice(2,7).toUpperCase(),nom:soul.name,pre:'',cat:'Adulte',sex:'',roles:[],tel:soul.tel||'',conv:(soul.history||[]).find(h=>h.stage==='Conduit à Christ')?.date||soul.date||'',integration:integrationDate,asm:soul.asm||'',fd:soul.followBy||'',fdTel:'',sourceSoulId:soul.id,hist:[{date:integrationDate,event:'Intégration automatique après les étapes spirituelles et quatre dimanches consécutifs'}]});}
+  else {member.integration=member.integration||integrationDate;member.asm=soul.asm||member.asm;member.sourceSoulId=soul.id;}
+  return true;
+}
+function renderSouls(){
+  if(!db.souls)db.souls=[];
+  const a=$$('soulAsm'),d=$$('soulDestAsm'),af=$$('soulAsmFilter');
+  const oldA=a.value,oldD=d.value,oldAF=af?.value||'';
+  a.innerHTML=asmOptions(oldA||((db.asm[0]||{}).id));d.innerHTML='<option value="">— Non applicable —</option>'+asmOptions(oldD);
+  if(af){af.innerHTML='<option value="">Toutes les assemblées</option>'+db.asm.map(x=>`<option value="${esc(x.id)}">${esc(x.n)}</option>`).join('');af.value=db.asm.some(x=>x.id===oldAF)?oldAF:'';}
+  if(!$$('soulDate').value)$$('soulDate').value=today();if(!$$('soulStageDate').value)$$('soulStageDate').value=today();
+  const q=($$('soulSearch')?.value||'').toLowerCase().trim(),f=$$('soulFilter')?.value||'',asm=af?.value||'',from=$$('soulDateFrom')?.value||'',to=$$('soulDateTo')?.value||'';
+  const L=db.souls.filter(x=>(!f||x.stage===f)&&(!asm||x.asm===asm)&&(!from||(x.stageDate||x.date||'')>=from)&&(!to||(x.stageDate||x.date||'')<=to)&&(!q||[x.name,x.tel,x.invitedBy,x.followBy].some(v=>(v||'').toLowerCase().includes(q)))).sort((a,b)=>(b.stageDate||b.date||'').localeCompare(a.stageDate||a.date||''));
+  $$('soulsList').innerHTML=L.length?L.map(x=>{
+    const sundays=[...new Set(x.sundayAttendance||[])].sort(),ministryText=(x.ministries||[]).join(', ')||'Aucune étape cochée';
+    return `<div class="list-item" data-soul-card="${esc(x.id)}"><div class="top"><b>${esc(x.name)}</b><span class="tag">${esc(x.stage||'—')}</span></div><div class="meta">${esc(asmName(x.asm))} · Contact : ${fmtDate(x.date)} · Étape : ${fmtDate(x.stageDate)}${x.invitedBy?' · Invité par '+esc(x.invitedBy):''}</div><div class="meta">Étapes reçues : ${esc(ministryText)}</div><div class="meta">Présences dominicales enregistrées (${sundays.length}) : ${sundays.map(fmtDate).join(', ')||'aucune'}</div>${x.notes?`<p>${esc(x.notes)}</p>`:''}<div class="row" style="align-items:end;gap:8px"><div><label>Ajouter une présence du dimanche</label><input type="date" data-soul-att-date value="${today()}"></div><div><button class="btn ghost sm" data-soul-attendance="${esc(x.id)}">＋ Enregistrer présence</button></div></div><div class="actions"><button class="btn ghost sm" data-soul-edit="${esc(x.id)}">Modifier</button><button class="btn danger sm" data-soul-del="${esc(x.id)}">Supprimer</button></div></div>`;
+  }).join(''):'<div class="empty">Aucune fiche pour ces filtres et cette période.</div>';
+  $$('soulsList').querySelectorAll('[data-soul-edit]').forEach(b=>b.onclick=()=>editSoul(b.dataset.soulEdit));
+  $$('soulsList').querySelectorAll('[data-soul-del]').forEach(b=>b.onclick=()=>confirmAction('Supprimer cette fiche de suivi ?',()=>{db.souls=db.souls.filter(x=>x.id!==b.dataset.soulDel);persist();renderSouls();}));
+  $$('soulsList').querySelectorAll('[data-soul-attendance]').forEach(b=>b.onclick=()=>recordSoulSundayAttendance(b.dataset.soulAttendance,b.closest('[data-soul-card]')?.querySelector('[data-soul-att-date]')?.value));
+}
+function recordSoulSundayAttendance(id,date){
+  const soul=db.souls.find(x=>x.id===id);if(!soul)return;
+  if(!date)return alert('Choisissez la date du culte.');
+  const d=new Date(date+'T12:00:00Z');if(d.getUTCDay()!==0)return alert('La date choisie n’est pas un dimanche.');
+  soul.sundayAttendance=soul.sundayAttendance||[];if(!soul.sundayAttendance.includes(date))soul.sundayAttendance.push(date);soul.sundayAttendance.sort();
+  const integrated=autoIntegrateSoul(soul);persist();renderSouls();
+  if(integrated){renderMembers();toast('✓ Les critères sont remplis : âme intégrée à la liste des membres.');}else toast('✓ Présence du dimanche enregistrée.');
+}
+
+function resetSoulForm(){editingSoulId=null; ['soulName','soulTel','soulDate','soulInvitedBy','soulFollowBy','soulStageDate','soulNotes'].forEach(id=>{if($$(id))$$(id).value='';}); $$('soulStage').value='Invité / premier contact'; $$('soulDate').value=today(); $$('soulStageDate').value=today(); $$('soulAsm').innerHTML=asmOptions((db.asm[0]||{}).id); $$('soulDestAsm').innerHTML='<option value="">— Non applicable —</option>'+asmOptions(''); renderSoulMinistryChoices([]); $$('btnSaveSoul').textContent='Enregistrer la fiche'; $$('btnCancelSoul').hidden=true; }
+function editSoul(id){const x=db.souls.find(s=>s.id===id);if(!x)return;editingSoulId=id; const map={soulName:x.name,soulTel:x.tel,soulDate:x.date,soulAsm:x.asm,soulInvitedBy:x.invitedBy,soulFollowBy:x.followBy,soulStage:x.stage,soulStageDate:x.stageDate,soulDestAsm:x.destAsm,soulNotes:x.notes}; const a=$$('soulAsm'),d=$$('soulDestAsm'); a.innerHTML=asmOptions(x.asm);d.innerHTML='<option value="">— Non applicable —</option>'+asmOptions(x.destAsm); Object.entries(map).forEach(([k,v])=>{if($$(k))$$(k).value=v||''}); renderSoulMinistryChoices(x.ministries||[]); $$('btnSaveSoul').textContent='Enregistrer les modifications';$$('btnCancelSoul').hidden=false; $$('soulName').scrollIntoView({behavior:'smooth',block:'center'}); }
+function saveSoul(){
+  const name=$$('soulName').value.trim();if(!name)return alert('Le nom complet est requis.');
+  const old=db.souls.find(x=>x.id===editingSoulId);
+  const x={...(old||{}),id:editingSoulId||uid(),name,tel:$$('soulTel').value.trim(),date:$$('soulDate').value||today(),asm:$$('soulAsm').value,invitedBy:$$('soulInvitedBy').value.trim(),followBy:$$('soulFollowBy').value.trim(),stage:$$('soulStage').value,stageDate:$$('soulStageDate').value||today(),destAsm:$$('soulDestAsm').value,notes:$$('soulNotes').value.trim(),ministries:getSelectedSoulMinistries(),sundayAttendance:[...(old?.sundayAttendance||[])],history:[...(old?.history||[])]};
+  if(!old||old.stage!==x.stage||old.stageDate!==x.stageDate)x.history.push({date:x.stageDate,stage:x.stage,asm:x.asm,destAsm:x.destAsm});
+  if(old){db.souls=db.souls.map(y=>y.id===old.id?x:y)}else db.souls.push(x);
+  const integrated=autoIntegrateSoul(x);
+  persist();resetSoulForm();renderSouls();if(integrated){renderMembers();toast('✓ Fiche enregistrée et âme intégrée à la liste des membres.')}else toast('✓ Fiche de suivi enregistrée');
+}
+function exportSoulsCSV(){const rows=[['Nom complet','Téléphone','Premier contact','Assemblée','Invité par','Responsable du suivi','Étape','Date étape','Étapes reçues','Présences dominicales','Assemblée destination','Notes'],...db.souls.map(x=>[x.name,x.tel,x.date,asmName(x.asm),x.invitedBy,x.followBy,x.stage,x.stageDate,(x.ministries||[]).join(', '),(x.sundayAttendance||[]).join(', '),asmName(x.destAsm),x.notes])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='suivi_ames_'+today()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
+/* ---------- Structure ---------- */
+function renderStructure(){
+  $$('zoneName').value = db.zone;
+  const subzones = db.subzones || (db.subzones=[]);
+  $$('locList').innerHTML = `<h3>Sous-centres / sous-zones</h3>` + subzones.map(z => `<p><b>${esc(z.n)}</b> <span class="text-small text-muted">· ${db.loc.filter(l => l.subzone === z.id).length} localité(s)/secteur(s)</span></p>`).join('') + (subzones.length?'':'<div class="empty">Aucune sous-zone définie.</div>') + `<div style="margin-top:12px"><button class="btn sm" onclick="addSubzone()">+ Ajouter un sous-centre / sous-zone</button></div><hr class="divider"><h3>Localités / secteurs</h3>` + db.loc.map(l => `<p><b>${esc(l.n)}</b><span class="text-small text-muted"> · ${esc((subzones.find(z=>z.id===l.subzone)||{}).n || 'Sous-zone non précisée')} · ${db.asm.filter(a => a.loc === l.id).length} assemblée(s)</span></p>`).join('') || '<div class="empty">Aucune localité.</div>';
+  $$('asmList').innerHTML = db.asm.map(a => `<p><b>${esc(a.n)}</b><span class="text-small text-muted"> · ${esc((db.loc.find(l => l.id === a.loc) || {}).n || '')}</span></p>`).join('') || '<div class="empty">Aucune assemblée.</div>';
+} 
+function addSubzone(){ showSheet(`<h3>Nouveau sous-centre / sous-zone</h3><label>Nom</label><input id="subzoneName" maxlength="100"><div class="flex-between" style="margin-top:16px"><span></span><span><button class="btn ghost" onclick="closeSheet()">Annuler</button> <button class="btn" onclick="saveSubzone()">Enregistrer</button></span></div>`); }
+function saveSubzone(){ const n=$$('subzoneName').value.trim(); if(!n) return alert('Nom requis.'); db.subzones.push({id:uid(),n}); persist(); closeSheet(); renderStructure(); }
+
+
+function generateZoneReport(){
+  if(!db) return;
+  const start=$$('zoneReportStart')?.value||'', end=$$('zoneReportEnd')?.value||'';
+  if(start&&end&&start>end) return alert('La date de début doit précéder la date de fin.');
+  const inPeriod=r=>(!start||r.date>=start)&&(!end||r.date<=end);
+  const reps=db.reports.filter(inPeriod).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const prayers=db.prayers.filter(inPeriod);
+  const members=new Set(db.members.map(m=>m.id));
+  const presentTotal=reps.reduce((n,r)=>n+(r.presentIds||[]).length,0);
+  const absentRows=reps.flatMap(r=>(r.absences||[]).map(a=>({r,a}))).filter(x=>x.a.notice==='aucun');
+  const inviteTotal=reps.reduce((n,r)=>n+(r.invitesNoms||'').split('\n').filter(x=>x.trim()).length,0);
+  const baptized=reps.reduce((n,r)=>n+(r.baptises||'').split('\n').filter(x=>x.trim()).length,0);
+  const breakings=reps.reduce((n,r)=>n+(r.brisement||'').split('\n').filter(x=>x.trim()).length,0);
+  const rows=db.asm.map(a=>{const rr=reps.filter(r=>r.asm===a.id);const ids=new Set(db.members.filter(m=>m.asm===a.id).map(m=>m.id));const p=rr.reduce((n,r)=>n+(r.presentIds||[]).length,0);const absent=rr.reduce((n,r)=>n+(r.absences||[]).length,0);const guests=rr.reduce((n,r)=>n+(r.invitesNoms||'').split('\n').filter(x=>x.trim()).length,0);return `<tr><td>${esc(a.n)}</td><td>${esc((db.loc.find(l=>l.id===a.loc)||{}).n||'—')}</td><td>${ids.size}</td><td>${rr.length}</td><td>${p}</td><td>${absent}</td><td>${guests}</td></tr>`;}).join('');
+  const dateLabel=start||end?`${start?fmtDate(start):'Début'} au ${end?fmtDate(end):'Aujourd’hui'}`:'Toutes les périodes enregistrées';
+  const root=$$('zoneReportPrint');root.hidden=false;root.innerHTML=`<div style="font-family:Arial,sans-serif;color:#111;padding:18px"><h1 style="text-align:center">COMPTE RENDU CONSOLIDÉ DE ZONE</h1><h2 style="text-align:center">${esc(db.zone)}</h2><p style="text-align:center">Période : ${esc(dateLabel)} · Généré le ${fmtDate(today())}</p><hr><h3>Synthèse générale</h3><table class="grid-table" style="width:100%"><tr><th>Assemblées</th><th>Membres enregistrés</th><th>Comptes rendus de culte</th><th>Réunions de prière</th><th>Présences cumulées</th><th>Invités cumulés</th><th>Baptêmes déclarés</th><th>Brisements déclarés</th></tr><tr><td>${db.asm.length}</td><td>${members.size}</td><td>${reps.length}</td><td>${prayers.length}</td><td>${presentTotal}</td><td>${inviteTotal}</td><td>${baptized}</td><td>${breakings}</td></tr></table><h3>Bilan par assemblée</h3><table class="grid-table" style="width:100%"><thead><tr><th>Assemblée</th><th>Localité / secteur</th><th>Membres</th><th>Cultes</th><th>Présences cumulées</th><th>Absences recensées</th><th>Invités cumulés</th></tr></thead><tbody>${rows}</tbody></table><h3>Suivi des absences non annoncées</h3><p>${absentRows.length} absence(s) non annoncée(s) enregistrée(s) sur la période.</p><h3>Suivi des âmes</h3><p>Fiches uniques enregistrées : ${db.souls.length}. Conduits à Christ : ${db.souls.filter(x=>x.stage==='Conduit à Christ').length}. Conduits à la repentance : ${db.souls.filter(x=>x.stage==='Conduit à la repentance').length}. Baptisés d’eau : ${db.souls.filter(x=>x.stage==='Baptisé d’eau').length}. Intégrés : ${db.souls.filter(x=>x.stage==='Intégré dans une assemblée').length}. Mutés : ${db.souls.filter(x=>x.stage==='Muté vers une autre assemblée').length}.</p><p style="margin-top:28px;font-size:11px">Document généré automatiquement à partir des données importées. Vérifier les informations avant transmission.</p></div>`;
+  document.body.classList.add('print-zone');
+  const cleanup=()=>{document.body.classList.remove('print-zone');root.hidden=true;window.removeEventListener('afterprint',cleanup);};
+  window.addEventListener('afterprint',cleanup); window.print();
+}
+
+/* ---------- Transfert ---------- */
+function renderTransfer(){
+  $$('xAsm').innerHTML = '<option value="*">Toute la zone</option>' +
+    db.asm.map(a => `<option value="${a.id}">${esc(a.n)}</option>`).join('');
+  renderImportHistory();
+}
+
+function renderImportHistory(){
+  $$('importHistory').innerHTML = db.imp.length
+    ? `<table class="grid-table"><thead><tr><th>Date</th><th>Source</th><th>Ajoutés</th><th>Conflits</th></tr></thead>
+       <tbody>${db.imp.map(i => `<tr><td>${esc(i.d)}</td><td>${esc(i.z)}</td><td>${i.n}</td><td>${i.k}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Aucun import.</div>';
+}
+
+function dl(name, obj){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(obj)], {type:'application/json'}));
+  a.download = name;
+  a.click();
+}
+
+function renderImportPreview(){
+  const N = { subzones:'Sous-zones / sous-centres', loc:'Localités / secteurs', asm:'Assemblées', members:'Membres', souls:'Suivi des âmes', acts:'Activités', fin:'Finances', dimes:'Dîmes', reports:'Comptes rendus', prayers:'Prières' };
+  const el = $$('importPreview');
+  if (!state.importPreview) { el.innerHTML = ''; return; }
+  el.innerHTML = `<table class="grid-table">
+    <thead><tr><th>Données</th><th>Nouveaux</th><th>Identiques</th><th>Conflits</th></tr></thead>
+    <tbody>${state.importPreview.map(([c,n,s,k]) => `<tr><td>${N[c]||c}</td><td>${n}</td><td>${s}</td><td>${k}</td></tr>`).join('')}</tbody>
+  </table>
+  <label class="check-row" style="margin-top:12px;">
+    <input type="checkbox" id="owConf">
+    <span>Remplacer les conflits si version importée plus récente</span>
+  </label>
+  <div style="margin-top:12px;display:flex;gap:8px;">
+    <button class="btn" onclick="applyImport()">Intégrer</button>
+    <button class="btn ghost" onclick="cancelImport()">Annuler</button>
+  </div>`;
+}
+
+/* ---------- Modale & picker ---------- */
+function showSheet(html){
+  $$('sheetContent').innerHTML = html;
+  $$('sheetOverlay').classList.add('open');
+}
+function closeSheet(){
+  $$('sheetOverlay').classList.remove('open');
+}
+
+function renderMemberPickerList(){
+  const q=($$('pickerSearch')?.value||'').trim().toLocaleLowerCase('fr');
+  const sorted=[...db.members].sort((a,b)=>memberName(a.id).localeCompare(memberName(b.id),'fr'))
+    .filter(m=>!q||memberName(m.id).toLocaleLowerCase('fr').includes(q));
+  $$('pickerList').innerHTML=sorted.length
+    ? sorted.map(m=>`<button type="button" class="picker-item" data-member="${esc(m.id)}"><b>${esc(memberName(m.id))}</b><small style="display:block;opacity:.75">${esc(asmName(m.asm))}${(m.roles||[]).length?' · '+esc((m.roles||[]).join(', ')):''}</small></button>`).join('')
+    : '<div class="empty">Aucun membre ne correspond à cette recherche. Vérifiez la liste des membres de l’assemblée.</div>';
+  $$('pickerList').querySelectorAll('[data-member]').forEach(b=>b.onclick=()=>{
+    const m=db.members.find(x=>x.id===b.dataset.member);
+    if(m&&state.pickerTarget) $$(state.pickerTarget).value=memberName(m.id);
+    closeMemberPicker();
+  });
+}
+function openMemberPicker(targetId){
+  state.pickerTarget=targetId;
+  if($$('pickerSearch')) $$('pickerSearch').value='';
+  renderMemberPickerList();
+  $$('pickerOverlay').classList.add('open');
+  setTimeout(()=>$$('pickerSearch')?.focus(),40);
+}
+function closeMemberPicker(){
+  $$('pickerOverlay').classList.remove('open');
+  state.pickerTarget=null;
+}
+
+// Catalogue des 66 livres et du nombre de chapitres de chacun.
+const BIBLE_BOOKS = [
+['Genèse',50],['Exode',40],['Lévitique',27],['Nombres',36],['Deutéronome',34],['Josué',24],['Juges',21],['Ruth',4],['1 Samuel',31],['2 Samuel',24],['1 Rois',22],['2 Rois',25],['1 Chroniques',29],['2 Chroniques',36],['Esdras',10],['Néhémie',13],['Esther',10],['Job',42],['Psaumes',150],['Proverbes',31],['Ecclésiaste',12],['Cantique des cantiques',8],['Ésaïe',66],['Jérémie',52],['Lamentations',5],['Ézéchiel',48],['Daniel',12],['Osée',14],['Joël',3],['Amos',9],['Abdias',1],['Jonas',4],['Michée',7],['Nahum',3],['Habacuc',3],['Sophonie',3],['Aggée',2],['Zacharie',14],['Malachie',4],['Matthieu',28],['Marc',16],['Luc',24],['Jean',21],['Actes',28],['Romains',16],['1 Corinthiens',16],['2 Corinthiens',13],['Galates',6],['Éphésiens',6],['Philippiens',4],['Colossiens',4],['1 Thessaloniciens',5],['2 Thessaloniciens',3],['1 Timothée',6],['2 Timothée',4],['Tite',3],['Philémon',1],['Hébreux',13],['Jacques',5],['1 Pierre',5],['2 Pierre',3],['1 Jean',5],['2 Jean',1],['3 Jean',1],['Jude',1],['Apocalypse',22]
+];
+function openBiblePicker(targetId){
+  state.bibleTarget=targetId;
+  const book=$$('bibleBook');
+  book.innerHTML=BIBLE_BOOKS.map((b,i)=>`<option value="${i}">${esc(b[0])}</option>`).join('');
+  book.value='0';
+  updateBibleChapters();
+  $$('biblePickerOverlay').classList.add('open');
+}
+function updateBibleChapters(){
+  const b=BIBLE_BOOKS[+$$('bibleBook').value]||BIBLE_BOOKS[0];
+  $$('bibleChapter').innerHTML=Array.from({length:b[1]},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  updateBibleVerses();
+}
+function updateBibleVerses(){
+  // Les versets sont choisis dans une plage large; vérifier la numérotation exacte dans la traduction utilisée.
+  const start=$$('bibleVerseStart'),end=$$('bibleVerseEnd');
+  const oldS=+(start.value||1),oldE=+(end.value||1);
+  const opts=Array.from({length:176},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');
+  start.innerHTML=opts;end.innerHTML=opts;
+  start.value=String(Math.min(oldS,176));end.value=String(Math.max(Math.min(oldE,176),Math.min(oldS,176)));
+  updateBiblePreview();
+}
+function updateBiblePreview(){
+  if(!$$('bibleBook'))return;
+  const b=BIBLE_BOOKS[+$$('bibleBook').value]||BIBLE_BOOKS[0];
+  const c=+$$('bibleChapter').value;
+  const a=+$$('bibleVerseStart').value,z=+$$('bibleVerseEnd').value;
+  const ref=`${b[0]} ${c}:${Math.min(a,z)}${Math.max(a,z)!==Math.min(a,z)?'-'+Math.max(a,z):''}`;
+  $$('bibleRefPreview').innerHTML=`<b>Aperçu :</b> ${esc(ref)}`;
+}
+function addBibleReference(){
+  const b=BIBLE_BOOKS[+$$('bibleBook').value]||BIBLE_BOOKS[0];
+  const c=+$$('bibleChapter').value;
+  const a=+$$('bibleVerseStart').value,z=+$$('bibleVerseEnd').value;
+  const ref=`${b[0]} ${c}:${Math.min(a,z)}${Math.max(a,z)!==Math.min(a,z)?'-'+Math.max(a,z):''}`;
+  const target=$$(state.bibleTarget);if(!target)return;
+  target.value=target.value.trim()?`${target.value.trim()} ; ${ref}`:ref;
+  const end=+$$('bibleVerseEnd').value;
+  $$('bibleVerseStart').value=String(Math.min(end+1,176));
+  $$('bibleVerseEnd').value=String(Math.min(end+1,176));
+  updateBiblePreview();
+}
+function closeBiblePicker(){ $$('biblePickerOverlay').classList.remove('open'); state.bibleTarget=null; }
+
+/* ---------- Toast & confirm ---------- */
+function toast(msg, ms){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), ms || 2500);
+}
+
+function confirmAction(message, onYes, opts){
+  opts = opts || {};
+  const modal = document.createElement('div');
+  modal.className = 'confirm-modal';
+  modal.innerHTML = `
+    <div class="box">
+      <p>${esc(message)}</p>
+      <div class="btns">
+        <button class="yes">${esc(opts.yesLabel || 'Oui')}</button>
+        <button class="no">${esc(opts.noLabel || 'Annuler')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  const cleanup = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') cleanup(); };
+  document.addEventListener('keydown', onKey);
+  modal.querySelector('.yes').onclick = () => { cleanup(); onYes && onYes(); };
+  modal.querySelector('.no').onclick = () => { cleanup(); if (opts.onNo) opts.onNo(); };
+  modal.onclick = e => { if (e.target === modal) cleanup(); };
+}
+
+/* ---------- Menu ⋯ & modales ---------- */
+function toggleMenu(e, id){
+  e.stopPropagation();
+  closeAllMenus();
+  const el = $$(id);
+  if (el) el.classList.toggle('open');
+}
+function closeAllMenus(){
+  document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+}
+document.addEventListener('click', closeAllMenus);
+
+function showAbout(){ $$('aboutModal').classList.add('open'); }
+function closeModal(id){ $$(id).classList.remove('open'); }
+
+/* ---------- Mode sombre & grands caractères ---------- */
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  try { localStorage.setItem('sz_dark', document.body.classList.contains('dark') ? '1' : '0'); } catch(e){}
+}
+function loadDark(){
+  try { if (localStorage.getItem('sz_dark') === '1') document.body.classList.add('dark'); } catch(e){}
+}
+function toggleBigFont(){
+  document.body.classList.toggle('big-font');
+  const on = document.body.classList.contains('big-font');
+  try { localStorage.setItem('sz_bigfont', on ? '1' : '0'); } catch(e){}
+  toast(on ? '🔍 Grands caractères activés' : '🔍 Taille normale');
+}
+function loadBigFont(){
+  try { if (localStorage.getItem('sz_bigfont') === '1') document.body.classList.add('big-font'); } catch(e){}
+}
+
+/* ---------- Sauvegarde complète ---------- */
+function exportBackup(){
+  dl('sauvegarde_suivi_zone_' + today() + '.json', { app: 'suivi-zone-bak', v: 4, db });
+  toast('✓ Sauvegarde exportée');
+}
+function restoreBackup(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const j = JSON.parse(e.target.result);
+      if (j.app !== 'suivi-zone-bak' || !j.db) throw new Error('invalide');
+      confirmAction('Remplacer TOUTES les données actuelles par cette sauvegarde ?', () => {
+        db = j.db;
+        ensureShape();
+        persist();
+        go('home');
+        toast('✓ Sauvegarde restaurée');
+      });
+    } catch(err) {
+      alert('Sauvegarde invalide.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+/* ---------- Initialisation & écouteurs ---------- */
+function bindMainEvents(){
+  if ($$('btnAdminUnlock')) $$('btnAdminUnlock').onclick=()=>{ if($$('adminPassword').value==='cmci2026'){ $$('adminLocked').hidden=true; $$('adminImportArea').hidden=false; $$('adminPassword').value=''; toast('Administration déverrouillée'); } else { alert('Mot de passe incorrect.'); } };
+  if ($$('btnAdminLock')) $$('btnAdminLock').onclick=()=>{ $$('adminImportArea').hidden=true; $$('adminLocked').hidden=false; };
+  if ($$('btnZoneReport')) $$('btnZoneReport').onclick=generateZoneReport;
+
+  if ($$('btnNewSoul')) $$('btnNewSoul').onclick=resetSoulForm;
+  if ($$('btnSaveSoul')) $$('btnSaveSoul').onclick=saveSoul;
+  if ($$('btnCancelSoul')) $$('btnCancelSoul').onclick=resetSoulForm;
+  if ($$('btnExportSouls')) $$('btnExportSouls').onclick=exportSoulsCSV;
+  if ($$('soulSearch')) $$('soulSearch').oninput=renderSouls;
+  if ($$('soulFilter')) $$('soulFilter').onchange=renderSouls;
+
+  // Bouton enregistrer (toolbar)
+  $$('btnSave').onclick = () => { persist(); toast('✓ Enregistré'); };
+  if ($$('btnBackGlobal')) $$('btnBackGlobal').onclick = goBackGlobal;
+
+  // Nouveaux
+  $$('btnNewDisciple').onclick = () => { resetMemberForm(); renderMemberForm(); go('member-form'); };
+  if ($$('btnNewMember')) $$('btnNewMember').onclick = () => { resetMemberForm(); renderMemberForm(); go('member-form'); };
+  if ($$('btnBackMemberList')) $$('btnBackMemberList').onclick = () => go('members', true);
+  if ($$('btnOpenDisciples')) $$('btnOpenDisciples').onclick = () => go('disciples');
+  $$('btnNewActivity').onclick = () => activityForm();
+  $$('btnNewFinance').onclick = () => financeForm();
+  if ($$('btnOpenJeune')) $$('btnOpenJeune').onclick = () => go('jeune');
+  $$('btnNewLoc').onclick = () => showSheet(`<h3>Nouvelle localité / secteur</h3>
+    <label>Nom</label><input id="locName">
+    <label>Sous-centre / sous-zone</label><select id="locSubzone">${(db.subzones||[]).map(z=>`<option value="${z.id}">${esc(z.n)}</option>`).join('')}</select>
+    <div class="flex-between" style="margin-top:16px;">
+      <span></span>
+      <span><button class="btn ghost" onclick="closeSheet()">Annuler</button>
+      <button class="btn" onclick="saveLoc()">Enregistrer</button></span>
+    </div>`);
+  $$('btnNewAsm').onclick = () => {
+    if (!db.loc.length) return alert("Créez d'abord une localité.");
+    showSheet(`<h3>Nouvelle assemblée</h3>
+      <label>Nom</label><input id="asmName2">
+      <label>Localité</label><select id="asmLoc2">${db.loc.map(l => `<option value="${l.id}">${esc(l.n)}</option>`).join('')}</select>
+      <div class="flex-between" style="margin-top:16px;">
+        <span></span>
+        <span><button class="btn ghost" onclick="closeSheet()">Annuler</button>
+        <button class="btn" onclick="saveAsm()">Enregistrer</button></span>
+      </div>`);
+  };
+
+  // Structure
+  $$('zoneName').onchange = e => { db.zone = e.target.value.trim() || "Zone spirituelle d'Attiékoi"; persist(); renderStructure(); };
+  $$('btnAddMember').onclick = () => {
+    const nom = $$('mNom').value.trim();
+    if (!nom) return alert('Nom requis.');
+    const fields = {
+      nom,
+      cat: $$('mCat').value,
+      sex: $$('mSex').value,
+      roles: selectedMemberRoles(),
+      tel: $$('mTel').value.trim(),
+      conv: $$('mConv').value,
+      integration: $$('mIntegration').value,
+      asm: $$('mAsm').value,
+      fd: $$('mDiscNom').value.trim(),
+      fdTel: $$('mDiscTel').value.trim(),
+    };
+    if (state.editingMemberId) {
+      const idx = db.members.findIndex(m => m.id === state.editingMemberId);
+      if (idx > -1) db.members[idx] = Object.assign({}, db.members[idx], fields);
+    } else {
+      db.members.push(Object.assign({ id: uid(), code:'M' + Math.random().toString(36).slice(2,6).toUpperCase(), pre:'', hist:[] }, fields));
+    }
+    persist();
+    resetMemberForm();
+    renderMembers();
+    goBackGlobal();
+    toast('✓ Membre enregistré');
+  };
+  $$('btnCancelMemberEdit').onclick = () => { resetMemberForm(); goBackGlobal(); };
+
+  // Recherche disciples
+  $$('searchDisciple').oninput = e => { state.q = e.target.value; renderDisciples(); };
+
+  // Dîmes
+  if($$('btnAddSpecialCollection')) $$('btnAddSpecialCollection').onclick=saveSpecialCollection;
+  if($$('btnPrintSpecialCollections')) $$('btnPrintSpecialCollections').onclick=()=>{const tbl=$$('specialCollectionsPrintTable');const w=window.open('','_blank');if(!w)return;w.document.write('<html lang="fr"><head><meta charset="utf-8"><title>Collectes spéciales</title><style>body{font-family:Arial;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #777;padding:7px;text-align:left}th{background:#eee}</style></head><body><h1>Collectes spéciales</h1>'+tbl.outerHTML+'</body></html>');w.document.close();w.print();};
+  $$('btnAddDime').onclick = () => {
+    const memberId = $$('dimeMember').value;
+    if (!memberId) return alert("Ajoutez un membre d'abord.");
+    const dime = +$$('dimeDime').value || 0;
+    const offrande = +$$('dimeOffrande').value || 0;
+    if (dime <= 0 && offrande <= 0) return alert('Saisissez au moins un montant.');
+    db.dimes.push({ id: uid(), date: $$('dimeDate').value || today(), memberId, dime, offrande, asm: $$('dimeAsm').value });
+    persist();
+    $$('dimeDime').value = ''; $$('dimeOffrande').value = '';
+    renderDimes();
+    toast('✓ Enregistré');
+  };
+
+  // Transfert
+  $$('btnExport').onclick = () => {
+    const s = $$('xAsm').value;
+    const f = x => s === '*' || x.asm === s || x.destAsm === s;
+    dl(('transfert_' + (s === '*' ? 'zone' : asmName(s)) + '_' + today() + '.json').replace(/\s/g,'_'),
+      { app: 'suivi-zone', schema: 4, zone: db.zone, date: today(), subzones: db.subzones, loc: db.loc,
+        souls: db.souls.filter(x => s === '*' || x.asm === s || x.destAsm === s), asm: db.asm.filter(a => s === '*' || a.id === s),
+        members: db.members.filter(f), acts: db.acts.filter(f), fin: db.fin.filter(f),
+        dimes: db.dimes.filter(f), specialCollections: (db.specialCollections||[]).filter(f), reports: db.reports.filter(f), prayers: db.prayers.filter(f) });
+    toast('✓ Fichier de transfert exporté');
+  };
+  $$('importFile').onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const j = JSON.parse(r.result);
+        if (j.app !== 'suivi-zone' || ![1,2,3,4].includes(j.schema)) throw 0;
+        state.importData = j;
+        state.importPreview = ['subzones','loc','asm','members','souls','acts','fin','dimes','reports','prayers'].map(c => {
+          let n = 0, s = 0, k = 0;
+          (j[c] || []).forEach(x => {
+            const ex = db[c].find(y => y.id === x.id);
+            if (!ex) n++;
+            else if (JSON.stringify(ex) === JSON.stringify(x)) s++;
+            else k++;
+          });
+          return [c,n,s,k];
+        });
+        renderImportPreview();
+      } catch(err) { alert('Fichier non reconnu.'); }
+    };
+    r.readAsText(file);
+  };
+  $$('btnBackup').onclick = exportBackup;
+
+  // Picker (boutons 👤)
+  document.querySelectorAll('[data-pick]').forEach(b => {
+    b.onclick = () => openMemberPicker(b.dataset.pick);
+  });
+  $$('btnClosePicker').onclick = closeMemberPicker;
+  $$('pickerOverlay').onclick = e => { if (e.target.id === 'pickerOverlay') closeMemberPicker(); };
+  if($$('pickerSearch')) $$('pickerSearch').oninput=renderMemberPickerList;
+  document.querySelectorAll('[data-bible-pick]').forEach(b=>b.onclick=()=>openBiblePicker(b.dataset.biblePick));
+  $$('btnCloseBiblePicker').onclick=closeBiblePicker;
+  $$('biblePickerOverlay').onclick=e=>{if(e.target.id==='biblePickerOverlay')closeBiblePicker();};
+  $$('btnAddBibleRef').onclick=addBibleReference;
+  $$('btnClearBibleRefs').onclick=()=>{const t=$$(state.bibleTarget);if(t)t.value='';};
+  $$('bibleBook').onchange=updateBibleChapters;
+  $$('bibleChapter').onchange=updateBibleVerses;
+  ['bibleVerseStart','bibleVerseEnd'].forEach(id=>$$(id).onchange=updateBiblePreview);
+
+  // Sheet overlay
+  $$('sheetOverlay').onclick = e => { if (e.target.id === 'sheetOverlay') closeSheet(); };
+
+  // About modal
+  $$('aboutModal').onclick = e => { if (e.target.id === 'aboutModal') closeModal('aboutModal'); };
+
+  // Filtrage de la liste des membres par assemblée
+  const membersAssemblyFilter = $$('membersAssemblyFilter');
+  if (membersAssemblyFilter) membersAssemblyFilter.onchange = () => renderMembers();
+  ['membersCategoryFilter','membersSexFilter','membersRoleFilter'].forEach(id=>{if($$(id))$$(id).onchange=()=>renderMembers();});
+  ['soulSearch','soulFilter','soulAsmFilter','soulDateFrom','soulDateTo'].forEach(id=>{if($$(id))$$(id).addEventListener(id==='soulSearch'?'input':'change',()=>renderSouls());});
+
+  // Impression de la liste des membres à suivre pour absences répétées
+  const btnPrintRetrogrades = $$('btnPrintRetrogrades');
+  if (btnPrintRetrogrades) btnPrintRetrogrades.onclick = () => {
+    const tbl = $$('retrogradesPrintTable');
+    if (!tbl || !tbl.querySelector('tr')) { alert('Aucun résultat à imprimer.'); return; }
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write('<html lang="fr"><head><meta charset="utf-8"><title>Frères à suivre — absences répétées</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{font-size:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #777;padding:7px;text-align:left}th{background:#eee}</style></head><body><h1>Frères à suivre — 4 cultes consécutifs sans justification</h1><p>Liste de suivi pastoral à vérifier par le dirigeant.</p>'+tbl.outerHTML+'</body></html>');
+    w.document.close(); w.focus(); w.print();
+  };
+
+  // Impression (listes)
+  const printIds = [
+    ['btnPrintActivities','activitiesPrintTable'],
+    ['btnPrintReports','reportsPrintTable'],
+    ['btnPrintMembers','membersPrintTable'],
+    ['btnPrintFinance','globalFinPrintTable'],
+    ['btnPrintDimes','dimesPrintTable'],
+  ];
+  printIds.forEach(([btnId, tblId]) => {
+    const btn = $$(btnId);
+    if (btn) btn.onclick = () => {
+      const tbl = $$(tblId);
+      if (!tbl) return;
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.write('<html><head><title>Impression</title><style>body{font-family:Georgia,serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #999;padding:6px;font-size:12pt;}th{background:#0a1f44;color:#e8d28a;}</style></head><body>');
+      w.document.write('<h2>' + db.zone + '</h2>');
+      w.document.write('<table>' + tbl.innerHTML + '</table>');
+      w.document.write('</body></html>');
+      w.document.close();
+      setTimeout(() => { w.focus(); w.print(); }, 300);
+    };
+  });
+}
+
+/* ---------- Fonctions globales (appelées depuis le HTML ou les modules) ---------- */
+function saveLoc(){
+  const n = $$('locName').value.trim();
+  if (!n) return alert('Nom requis.');
+  db.loc.push({ id: uid(), n, subzone: ($$('locSubzone')||{}).value || (db.subzones[0]||{}).id || '' });
+  persist();
+  closeSheet();
+  renderStructure();
+}
+function saveAsm(){
+  const n = $$('asmName2').value.trim();
+  if (!n) return alert('Nom requis.');
+  db.asm.push({ id: uid(), n, loc: $$('asmLoc2').value });
+  persist();
+  closeSheet();
+  renderStructure();
+}
+function applyImport(){
+  const ow = $$('owConf') && $$('owConf').checked;
+  const j = state.importData;
+  let N = 0, K = 0;
+  ['subzones','loc','asm','members','souls','acts','fin','dimes','specialCollections','reports','prayers'].forEach(c => {
+    (j[c] || []).forEach(x => {
+      const i = db[c].findIndex(y => y.id === x.id);
+      if (i < 0) { db[c].push(x); N++; }
+      else if (JSON.stringify(db[c][i]) !== JSON.stringify(x)) {
+        K++;
+        if (ow && (x.u || 0) > (db[c][i].u || 0)) db[c][i] = x;
+      }
+    });
+  });
+  if (db.zone === "Zone spirituelle d'Attiékoi" && j.zone) db.zone = j.zone;
+  db.imp.unshift({ d: new Date().toLocaleString('fr-FR'), z: (j.asm || []).map(a => a.n).join(', ') || '—', n: N, k: K });
+  state.importData = null;
+  state.importPreview = null;
+  persist();
+  renderImportHistory();
+  renderImportPreview();
+  toast('✓ ' + N + ' élément(s) importé(s), ' + K + ' conflit(s)');
+}
+function cancelImport(){
+  state.importData = null;
+  state.importPreview = null;
+  renderImportPreview();
+}
+
+/* ---------- Init ---------- */
+function init(){
+  loadDB();
+  loadDark();
+  loadBigFont();
+  bindMainEvents();
+  renderNav();
+  go('home');
+}
+
+/* init() est appelé en fin de script (après le seed et les modules) */
+/* =========================================================
+   MODULES — Seed membres, Cultes, Prières, Jeûne
+   ========================================================= */
+
+/* ---------- SEED : 106 membres (QG 52 + 04 Croix 28 + Ahoué 26) ---------- */
+const SEED_MEMBERS = [
+  /* ===== QG (52 membres) ===== */
+  { code:'QG01', nom:"Anne Joëlle zézé",        cat:'Adulte', tel:'0719342546',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG02', nom:"Brou Anne Marie",         cat:'Adulte', tel:'0757767901',    conv:'', integ:'', asm:'asm_qg',      fd:'Pasteur Amel',                    fdTel:'' },
+  { code:'QG03', nom:"Brou n'da israël",        cat:'Adulte', tel:'0769371249',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG04', nom:"DAMASSOH ANGE DANIEL",    cat:'Enfant', tel:'0779810525',    conv:'', integ:'', asm:'asm_qg',      fd:'DAMASSOH MARTIN',                 fdTel:'0779810525' },
+  { code:'QG05', nom:"DAMASSOH ARIEL",          cat:'Enfant', tel:'0779810525',    conv:'', integ:'', asm:'asm_qg',      fd:'EMMANUELLE EPSE DAMASSOH',        fdTel:'' },
+  { code:'QG06', nom:"Damassoh Caleb",          cat:'Enfant', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'Pasteur Damassoh',                fdTel:'0779810525' },
+  { code:'QG07', nom:"DAMASSOH DEBORAH",        cat:'Adulte', tel:'0556830445',    conv:'', integ:'', asm:'asm_qg',      fd:'MARTIAL',                         fdTel:'' },
+  { code:'QG08', nom:"DAMASSOH ISAREL",         cat:'Adulte', tel:'0100837117',    conv:'', integ:'', asm:'asm_qg',      fd:'COLETTE MENYE',                   fdTel:'' },
+  { code:'QG09', nom:"DAMASSOH MARTIN",         cat:'Adulte', tel:'0779810525',    conv:'', integ:'', asm:'asm_qg',      fd:'PST DEGONZAGUE',                  fdTel:'' },
+  { code:'QG10', nom:"DAMASSOH SEPHORAH",       cat:'Adulte', tel:'0501218129',    conv:'', integ:'', asm:'asm_qg',      fd:'CAROLE BABATOUNDE',               fdTel:'' },
+  { code:'QG11', nom:"Dieumond Annita",         cat:'Adulte', tel:'0160349720',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG12', nom:"Don Athien Nathalie",     cat:'Adulte', tel:'0170790512',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG13', nom:"EMMANUELLE EPSE DAMASSOH",cat:'Adulte', tel:'0789472847',    conv:'', integ:'', asm:'asm_qg',      fd:'SR ELISE DEGONZAGUE',             fdTel:'' },
+  { code:'QG14', nom:"Fahé ange esaïe",         cat:'Enfant', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG15', nom:"Fahé Josué",              cat:'Enfant', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG16', nom:"Fahé Marius kader",       cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG17', nom:"GEUI IFIMINE",            cat:'Adulte', tel:'0707230474',    conv:'', integ:'', asm:'asm_qg',      fd:'PST ALAIN',                       fdTel:'' },
+  { code:'QG18', nom:"GNAMIEN JOSEPH",          cat:'Adulte', tel:'0584289355',    conv:'', integ:'', asm:'asm_qg',      fd:'BONIFACE KOUASSI',                fdTel:'' },
+  { code:'QG19', nom:"JEAN MARIE",              cat:'Adulte', tel:'0716764932',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG20', nom:"JUNIOR",                  cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG21', nom:"KEUGA YAWO ALAIN",        cat:'Adulte', tel:'0555403567',    conv:'', integ:'', asm:'asm_qg',      fd:'PST Boniface Menyé',              fdTel:'' },
+  { code:'QG22', nom:"Keuga Yawu Samuel",       cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG23', nom:"Koffi Martine",           cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG24', nom:"Konan Marvinie",          cat:'Enfant', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG25', nom:"Konan Roland Nicaise",    cat:'Adulte', tel:'0749943495',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG26', nom:"Kouadio Florence",        cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG27', nom:"Kouakou Amoin Ruth",      cat:'Adulte', tel:'0716332507',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG28', nom:"Koutou Adelaide",         cat:'Adulte', tel:'0143535276',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG29', nom:"Lagahi Béatrice",         cat:'Adulte', tel:'0748452502',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG30', nom:"LAURENCE CATHERINE GNANGBO KADJA EPOUSE LEGRE", cat:'Adulte', tel:'0500426435', conv:'', integ:'', asm:'asm_qg', fd:'MAMAN QUENUM', fdTel:'' },
+  { code:'QG31', nom:"MAMAN QUENUM",            cat:'Adulte', tel:'0707224370',    conv:'', integ:'', asm:'asm_qg',      fd:'COLETTE MENYE',                   fdTel:'' },
+  { code:'QG32', nom:"Misericorde",             cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG33', nom:"Mobio Dominique",         cat:'Adulte', tel:'0153169611',    conv:'', integ:'', asm:'asm_qg',      fd:'Colette Menye',                   fdTel:'0768966921' },
+  { code:'QG34', nom:"MOUSSA MARUIS",           cat:'Adulte', tel:'0768966921',    conv:'', integ:'', asm:'asm_qg',      fd:'DROH RICHMOND',                   fdTel:'' },
+  { code:'QG35', nom:"N'cho Jeannot",           cat:'Adulte', tel:'0748185197',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG36', nom:"N'Guessan Béatrice",      cat:'Adulte', tel:'0707329419',    conv:'', integ:'', asm:'asm_qg',      fd:'Sœurs Joseline',                  fdTel:'' },
+  { code:'QG37', nom:"Offrande",                cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG38', nom:"Ouattara epse fahe",      cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG39', nom:"Ouattara Francine",       cat:'Adulte', tel:'0778423458',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG40', nom:"Patricia epse yokpa",     cat:'Adulte', tel:'0160007050',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG41', nom:"SAGOU CLOTAIRE",          cat:'Adulte', tel:'0707674758',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG42', nom:"Sagou Nathalie",          cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG43', nom:"SAGOU PRINCE",            cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG44', nom:"Sery Delphine Esther",    cat:'Adulte', tel:'0103609442',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG45', nom:"Tahoua caleb",            cat:'Enfant', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG46', nom:"Tahoua Esther",           cat:'Adulte', tel:'0709324833',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG47', nom:"TOHOU HYPOLITE",          cat:'Adulte', tel:'0565177340',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG48', nom:"Yao Innocent",            cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG49', nom:"Yapo Alex Paterne",       cat:'Adulte', tel:'0787996980',    conv:'', integ:'', asm:'asm_qg',      fd:'Sœurs Francine',                  fdTel:'' },
+  { code:'QG50', nom:"Yokpa kouakou",           cat:'Adulte', tel:'0544077050',    conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG51', nom:"Zadi Jérémy",             cat:'Adulte', tel:'',              conv:'', integ:'', asm:'asm_qg',      fd:'',                                fdTel:'' },
+  { code:'QG52', nom:"ZIGBE GOLOU JOSEPHINE",   cat:'Adulte', tel:'0759255572',    conv:'', integ:'', asm:'asm_qg',      fd:'MAMAN QUENUM',                    fdTel:'' },
+
+  /* ===== 04 Croix (28 membres) ===== */
+  { code:'04X01', nom:"Abalé toti hilaine",                cat:'Adulte', tel:'0584762992', conv:'2024-04-15', integ:'2026-08-23', asm:'asm_04croix', fd:'Koffi Emmanuel',                 fdTel:'0749536577' },
+  { code:'04X02', nom:"Agnès elishama",                    cat:'Enfant', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X03', nom:"Agnès Emmanuel",                    cat:'Enfant', tel:'0143106424', conv:'',           integ:'2026-07-01', asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X04', nom:"Agnès Régina Naomie joyanna",       cat:'Enfant', tel:'0143106424', conv:'',           integ:'2026-08-23', asm:'asm_04croix', fd:'Kiki epsé dogo armel',            fdTel:'0585066494' },
+  { code:'04X05', nom:"Atse achi Alexis arnaud",           cat:'Adulte', tel:'0173953607', conv:'',           integ:'',           asm:'asm_04croix', fd:'Pst kouao',                       fdTel:'' },
+  { code:'04X06', nom:"Atse achi Emmanuel",                cat:'Enfant', tel:'0748844605', conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X07', nom:"Diawara Christ kiliane",            cat:'Enfant', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X08', nom:"Diawara joseph",                    cat:'Enfant', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X09', nom:"Diawara ognin aka David",           cat:'Enfant', tel:'0504261224', conv:'',           integ:'',           asm:'asm_04croix', fd:'Ognin Diawara kalilou',           fdTel:'0556613181' },
+  { code:'04X10', nom:"Diawara ognin assalé Emmanuel",     cat:'Enfant', tel:'0172418519', conv:'',           integ:'',           asm:'asm_04croix', fd:'Marie olive epsé koffi',          fdTel:'0787509597' },
+  { code:'04X11', nom:"Diawara ognin kalilou",             cat:'Adulte', tel:'0556613181', conv:'2024-03-01', integ:'2024-04-23', asm:'asm_04croix', fd:'Keuga yawo Alain',                fdTel:'0555403567' },
+  { code:'04X12', nom:"Diawara ognin Odette Sephora",      cat:'Enfant', tel:'0544421747', conv:'',           integ:'',           asm:'asm_04croix', fd:'Kosset ziwah rufus Elisée',       fdTel:'0768215326' },
+  { code:'04X13', nom:"Diawara ognin Ulrich Isaac",        cat:'Enfant', tel:'0504261224', conv:'2024-09-27', integ:'2024-09-27', asm:'asm_04croix', fd:'Ognin Diawara kalilou',           fdTel:'0556613181' },
+  { code:'04X14', nom:"Djako aby",                         cat:'Adulte', tel:'0788299424', conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X15', nom:"Djosso sekre sara",                 cat:'Adulte', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X16', nom:"Ebikan badou Catherine epsé Diawara",cat:'Adulte',tel:'0504261224', conv:'2024-03-01', integ:'2024-04-01', asm:'asm_04croix', fd:'Koffi jean marc olivier',         fdTel:'0747284694' },
+  { code:'04X17', nom:"Gui Andréa désiré ludwine",         cat:'Adulte', tel:'0143106424', conv:'2022-07-01', integ:'2026-08-23', asm:'asm_04croix', fd:'Dogo armel',                      fdTel:'0757067030' },
+  { code:'04X18', nom:"Kiendrebiogo aminata",              cat:'Adulte', tel:'0586027529', conv:'2025-06-09', integ:'2026-09-27', asm:'asm_04croix', fd:'Aubin gnonsoi',                   fdTel:'0777273830' },
+  { code:'04X19', nom:"Koffi jean marc olivier",           cat:'Adulte', tel:'0747284694', conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X20', nom:"Kolie Bernard",                     cat:'Adulte', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'Ognin Diawara',                   fdTel:'' },
+  { code:'04X21', nom:"Konan n'goran Ezéchiel",            cat:'Enfant', tel:'0778742151', conv:'2026-07-01', integ:'2026-09-27', asm:'asm_04croix', fd:'Bosco',                           fdTel:'' },
+  { code:'04X22', nom:"Kosset ziwah Rufus Elisée",         cat:'Adulte', tel:'0768215326', conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X23', nom:"Kouakou akissi",                    cat:'Enfant', tel:'0161597542', conv:'',           integ:'',           asm:'asm_04croix', fd:'Kosset ziwah rufus Elisée',       fdTel:'0768215326' },
+  { code:'04X24', nom:"Kouassi akissi",                    cat:'Adulte', tel:'0777547929', conv:'2017-09-27', integ:'2026-02-01', asm:'asm_04croix', fd:'Koffi kouassi martin Solange',    fdTel:'' },
+  { code:'04X25', nom:"Kouassi amoita",                    cat:'Adulte', tel:'0151575713', conv:'2026-07-25', integ:'2026-08-23', asm:'asm_04croix', fd:'Abalé toti hilaine',              fdTel:'0584762992' },
+  { code:'04X26', nom:"Loukou amenan Philomène epse Atse", cat:'Adulte', tel:'0748844605', conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X27', nom:"Mahi ottou Paul Armand",            cat:'Adulte', tel:'',           conv:'',           integ:'',           asm:'asm_04croix', fd:'',                                fdTel:'' },
+  { code:'04X28', nom:"Nabie rosine",                      cat:'Enfant', tel:'0502936470', conv:'',           integ:'',           asm:'asm_04croix', fd:'Koffi jean marc olivier',         fdTel:'0747284694' },
+
+  /* ===== Ahoué (26 membres) ===== */
+  { code:'AH01', nom:"Aboke Chidje Valérie",               cat:'Adulte', tel:'0707963942', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH02', nom:"Achi Aboué Francoise Epse Adou",     cat:'Adulte', tel:'0585707341', conv:'',           integ:'',           asm:'asm_ahoue', fd:'Bah Gnontey Marthe',              fdTel:'0789759774' },
+  { code:'AH03', nom:"Adou EKra Adolphe",                  cat:'Adulte', tel:'0565779620', conv:'2021-08-15', integ:'2021-12-26', asm:'asm_ahoue', fd:'koffi jean marc olivier essan',   fdTel:'0747284694' },
+  { code:'AH04', nom:"Adou EKra Emmanuel",                 cat:'Enfant', tel:'',           conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH05', nom:"Adou Grace",                         cat:'Adulte', tel:'0707963942', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH06', nom:"Allé Kosso Constance",               cat:'Adulte', tel:'0586839780', conv:'',           integ:'',           asm:'asm_ahoue', fd:'koffi jean marc',                 fdTel:'0747284694' },
+  { code:'AH07', nom:"Aste Aste Fabrice",                  cat:'Adulte', tel:'0749449067', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH08', nom:"Atta Aya Sidonie Épouse Koffi",      cat:'Adulte', tel:'0102466520', conv:'',           integ:'',           asm:'asm_ahoue', fd:'ykpé jean',                       fdTel:'0707580228' },
+  { code:'AH09', nom:"Bah Ange Esther",                    cat:'Enfant', tel:'0506576621', conv:'',           integ:'',           asm:'asm_ahoue', fd:'Bah Gnontey Marthe',              fdTel:'0789759774' },
+  { code:'AH10', nom:"Bah Benoît",                         cat:'Adulte', tel:'0747284694', conv:'',           integ:'',           asm:'asm_ahoue', fd:'koffi jean marc',                 fdTel:'0747284694' },
+  { code:'AH11', nom:"Bah Gnontey Marthe",                 cat:'Adulte', tel:'0789759574', conv:'2019-12-26', integ:'',           asm:'asm_ahoue', fd:'kuite Paul',                      fdTel:'0506621708' },
+  { code:'AH12', nom:"Briso Brigitte",                     cat:'Adulte', tel:'0789859186', conv:'2018-12-22', integ:'',           asm:'asm_ahoue', fd:'Colette menye',                   fdTel:'0707968523' },
+  { code:'AH13', nom:"Koffi Jean Marc Olivier Essan",      cat:'Adulte', tel:'0747284694', conv:'2007-06-17', integ:'2021-12-03', asm:'asm_ahoue', fd:'Ettien Antoine Edja',             fdTel:'0749447900' },
+  { code:'AH14', nom:"Kossonou Marie Carine",              cat:'Enfant', tel:'',           conv:'',           integ:'',           asm:'asm_ahoue', fd:'yao Amenant christiana epse kossonou', fdTel:'0707739057' },
+  { code:'AH15', nom:"Kossonou Mikael",                    cat:'Enfant', tel:'0707739057', conv:'',           integ:'',           asm:'asm_ahoue', fd:'yao Amenant christiana epse kossonou', fdTel:'0707739057' },
+  { code:'AH16', nom:"Kossonou Mikaella",                  cat:'Enfant', tel:'0707739057', conv:'',           integ:'',           asm:'asm_ahoue', fd:'yao Amenant Marie christiana epse kossonou', fdTel:'0707739057' },
+  { code:'AH17', nom:"Logbou Ambé Paul",                   cat:'Adulte', tel:'0757536085', conv:'2015-09-19', integ:'',           asm:'asm_ahoue', fd:'Ehu Jeannette epse',              fdTel:'0707488399' },
+  { code:'AH18', nom:"Manbo Fabrice",                      cat:'Adulte', tel:'0779188253', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH19', nom:"Mandađja Akoua Marie Olive Epse Koffi",cat:'Adulte',tel:'0787509597',conv:'',          integ:'',           asm:'asm_ahoue', fd:'Oka Enorc',                       fdTel:'0747397950' },
+  { code:'AH20', nom:"Sehi Henriette Epse bah",            cat:'Adulte', tel:'0506576621', conv:'',           integ:'',           asm:'asm_ahoue', fd:'koffi jean marc olivier essan',   fdTel:'0747284694' },
+  { code:'AH21', nom:"Tahiti Grâce",                       cat:'Enfant', tel:'0584410043', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH22', nom:"Yao Amenant Marie Christiana Epse Kossonou",cat:'Adulte',tel:'0707739057',conv:'',      integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+  { code:'AH23', nom:"Yapi Akichi Paulin",                 cat:'Adulte', tel:'0500225995', conv:'',           integ:'',           asm:'asm_ahoue', fd:'koffi jean marc olivier essan',   fdTel:'0747284694' },
+  { code:'AH24', nom:"Yobo lycette Josette",               cat:'Adulte', tel:'0719143540', conv:'',           integ:'',           asm:'asm_ahoue', fd:'',                                fdTel:'' },
+];
+
+/* Adapter : fusionner "nom" et "pre" (ici pre vide) */
+SEED_MEMBERS.forEach(m => { m.pre = m.pre || ''; m.hist = m.hist || []; });
+
+/* ---------- Présence partagée (cultes + prières) ---------- */
+function renderPresenceGroups(containerId, selectedIds){
+  selectedIds = selectedIds || [];
+  const groups = [['Adulte','Adultes'], ['Enfant','Enfants']];
+  const el = $$(containerId);
+  if (!el) return;
+  el.innerHTML = groups.map(([cat, label]) => {
+    const selectedAsm = containerId === 'presenceGroups' ? ($$('rAsm') && $$('rAsm').value) : null;
+    const items = db.members
+      .filter(m => m.cat === cat && (!selectedAsm || m.asm === selectedAsm))
+      .sort((a,b) => memberName(a.id).localeCompare(memberName(b.id)));
+    if (!items.length) return '';
+    return `<div class="section-title" style="margin-top:10px;">${label}</div>`
+      + items.map(m => `
+        <label class="check-row" style="border-bottom:1px solid var(--line);padding:6px 0;">
+          <input type="checkbox" data-pid="${m.id}" ${selectedIds.includes(m.id)?'checked':''}>
+          <span>${esc(memberName(m.id))}</span>
+        </label>`).join('');
+  }).join('') || '<div class="empty">Ajoutez des membres dans « Membres ».</div>';
+
+  el.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => { if (containerId === 'presenceGroups') { const oldAbs=collectAbsences(); renderAbsenceList(oldAbs); updateCounts(); } };
+  });
+}
+
+function renderSoulPresenceGroups(selectedIds=[]){
+  const el=$$('soulPresenceGroups'); if(!el)return;
+  const asm=$$('rAsm')?.value||'';
+  const souls=(db.souls||[]).filter(x=>x.asm===asm && x.stage!=='Intégré dans une assemblée' && x.stage!=='Muté vers une autre assemblée').sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  el.innerHTML=souls.length?souls.map(x=>`<label class="check-row" style="border-bottom:1px solid var(--line);padding:5px 0;"><input type="checkbox" data-sid="${esc(x.id)}" ${selectedIds.includes(x.id)?'checked':''}><span>${esc(x.name)} <small class="text-muted">— ${esc(x.stage||'En suivi')}</small></span></label>`).join(''):'<div class="empty">Aucune âme en suivi dans cette assemblée.</div>';
+}
+
+function renderAbsenceList(saved){
+  const el=$$('absenceList'); if(!el) return;
+  const present=[...($$('presenceGroups')?.querySelectorAll('input:checked')||[])].map(x=>x.dataset.pid);
+  const asm=$$('rAsm')?.value;
+  const abs=db.members.filter(m=>m.asm===asm && !present.includes(m.id)).sort((a,b)=>memberName(a.id).localeCompare(memberName(b.id)));
+  if(!abs.length){el.innerHTML='<div class="empty">Aucun absent à signaler pour cette assemblée.</div>';return;}
+  const old=Array.isArray(saved)?saved:[];
+  el.innerHTML=abs.map(m=>{const x=old.find(a=>a.memberId===m.id)||{};return `<div class="card flat" style="padding:10px;margin:8px 0;border:1px solid var(--line);border-top:2px solid var(--gold)"><b>${esc(memberName(m.id))}</b><div class="row"><div><label>A-t-il prévenu ?</label><select data-abs-notice="${m.id}"><option value="inconnu" ${(!x.notice||x.notice==='inconnu')?'selected':''}>Non précisé</option><option value="avant" ${x.notice==='avant'?'selected':''}>Oui, avant</option><option value="apres" ${x.notice==='apres'?'selected':''}>Oui, après</option><option value="aucun" ${x.notice==='aucun'?'selected':''}>Non, pas prévenu</option></select></div><div><label>Motif (si connu)</label><input data-abs-reason="${m.id}" value="${esc(x.motif||'')}" placeholder="Motif éventuel"></div></div><label>Suivi à effectuer</label><input data-abs-follow="${m.id}" value="${esc(x.suivi||'')}" placeholder="Appel, visite, prière…"></div>`}).join('');
+}
+function collectAbsences(){
+ const el=$$('absenceList'); if(!el)return [];
+ return [...el.querySelectorAll('[data-abs-notice]')].map(s=>({memberId:s.dataset.absNotice,notice:s.value,motif:el.querySelector(`[data-abs-reason="${s.dataset.absNotice}"]`)?.value.trim()||'',suivi:el.querySelector(`[data-abs-follow="${s.dataset.absNotice}"]`)?.value.trim()||''}));
+}
+
+function updateCounts(){
+  const checked = [...$$('presenceGroups').querySelectorAll('input:checked')].map(c => c.dataset.pid);
+  const enfants = db.members.filter(m => checked.includes(m.id) && m.cat === 'Enfant').length;
+  const adultes = db.members.filter(m => checked.includes(m.id) && m.cat === 'Adulte').length;
+  const invites = $$('rInvitesNoms').value.split('\n').map(s => s.trim()).filter(Boolean).length;
+  $$('cEnfants').textContent = enfants;
+  $$('cAdultes').textContent = adultes;
+  $$('cInvites').textContent = invites;
+}
+
+/* ---------- Comptes rendus de culte ---------- */
+function renderReports(){
+  const L = [...db.reports].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const list = $$('reportsList');
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucun compte rendu enregistré.</div>';
+    $$('reportsPrintTable').innerHTML = '';
+    return;
+  }
+  list.innerHTML = L.map(r => `
+    <div class="list-item">
+      <div class="top">
+        <span>${esc(asmName(r.asm))} — ${fmtDate(r.date)}</span>
+        <span class="tag">${reportTotal(r)} présents</span>
+      </div>
+      <div class="meta">Thème : ${esc(r.theme || '—')}</div>
+      <div class="actions">
+        <button class="btn ghost sm" data-view-rep="${r.id}">👁️ Voir</button>
+        <button class="btn danger sm" data-del-rep="${r.id}">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('[data-view-rep]').forEach(b => b.onclick = () => openReportView(b.dataset.viewRep));
+  list.querySelectorAll('[data-del-rep]').forEach(b => {
+    b.onclick = () => {
+      confirmAction('Supprimer ce compte rendu ?', () => {
+        db.reports = db.reports.filter(x => x.id !== b.dataset.delRep);
+        persist();
+        renderReports();
+      });
+    };
+  });
+  $$('reportsPrintTable').innerHTML = '<tr><th>Date</th><th>Assemblée</th><th>Thème</th><th>Effectif</th></tr>' +
+    L.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(asmName(r.asm))}</td><td>${esc(r.theme||'')}</td><td>${reportTotal(r)}</td></tr>`).join('');
+}
+
+function openReportForm(r){
+  state.editingReportId = r ? r.id : null;
+  $$('reportFormTitle').textContent = r ? 'Modifier le compte rendu' : 'Nouveau compte rendu';
+  const f = (id,v) => { const el = $$(id); if (el) el.value = v || ''; };
+  f('rDate', r ? r.date : today());
+  $$('rAsm').innerHTML = asmOptions(r ? r.asm : (db.asm[0]||{}).id);
+  f('rCoord', r?.coordonnateur);
+  f('rTheme', r?.theme);
+  f('rRefTheme', r?.refTheme);
+  f('rExhort', r?.exhortateur);
+  f('rRefExhort', r?.refExhort);
+  f('rIdee', r?.ideePrincipale);
+  f('rMinistre', r?.ministre);
+  f('rRefCene', r?.refCene);
+  f('rNbCene', r?.nbCene);
+  f('rInvitesNoms', r?.invitesNoms);
+  f('rDimes', r?.dimes);
+  f('rOffrande', r?.offrande);
+  f('rBaptises', r?.baptises);
+  f('rBrisement', r?.brisement);
+  renderPresenceGroups('presenceGroups', r ? r.presentIds : []);
+  renderSoulPresenceGroups(r ? (r.soulPresentIds||[]) : []);
+  renderAbsenceList(r ? r.absences : []);
+  if ($$('rAsm')) $$('rAsm').onchange = () => { renderPresenceGroups('presenceGroups', []); renderSoulPresenceGroups([]); renderAbsenceList([]); updateCounts(); };
+  updateCounts();
+  showSub('report-form');
+}
+
+function openReportView(id){
+  state.viewingReportId = id;
+  const r = db.reports.find(x => x.id === id);
+  if (!r) return;
+  const checked = r.presentIds || [];
+  const noms = db.members.filter(m => checked.includes(m.id)).map(m => `${memberName(m.id)} (${m.cat})`);
+  const invites = (r.invitesNoms || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const absents = (r.absences || []).map(a => { const m=db.members.find(x=>x.id===a.memberId); return `${m?memberName(m.id):'Membre inconnu'} — ${a.notice==='avant'?'a prévenu avant':a.notice==='apres'?'a prévenu après':a.notice==='aucun'?'n’a pas prévenu':'non précisé'}${a.motif?' ; motif : '+a.motif:''}${a.suivi?' ; suivi : '+a.suivi:''}`; });
+  const enf = db.members.filter(m => checked.includes(m.id) && m.cat === 'Enfant').length;
+  const adu = db.members.filter(m => checked.includes(m.id) && m.cat === 'Adulte').length;
+  const line = (label, val) => val ? `<p><strong>${label} :</strong> ${esc(val)}</p>` : '';
+  const block = (label, val) => val ? `<p><strong>${label} :</strong><br>${val.split('\n').filter(Boolean).map(esc).join('<br>')}</p>` : '';
+  $$('reportViewContent').innerHTML = `
+    <h2>${esc(asmName(r.asm))} — ${fmtDate(r.date)}</h2>
+    ${line('Coordonnateur', r.coordonnateur)} ${line('Thème', r.theme)} ${line('Référence', r.refTheme)}
+    <hr class="divider">
+    ${line('Exhortateur', r.exhortateur)} ${line('Idée principale', r.ideePrincipale)} ${line('Références', r.refExhort)}
+    <hr class="divider">
+    ${line('Ministre Sainte Cène', r.ministre)} ${line('Référence', r.refCene)} ${line('Nb personnes', r.nbCene)}
+    <hr class="divider">
+    <p><strong>Effectif :</strong> Enfants ${enf} · Adultes ${adu} · Invités ${invites.length} · <b>Total ${enf+adu+invites.length}</b></p>
+    ${block('Présents', noms.join('\n'))}
+    ${block('Absents et suivi', absents.join('\n'))}
+    ${block('Invités', invites.join('\n'))}
+    <hr class="divider">
+    ${line('Dîmes (FCFA)', r.dimes)} ${line('Offrande (FCFA)', r.offrande)}
+    ${block('Baptisés', r.baptises)}
+    ${block('Brisement de liens', r.brisement)}
+  `;
+  showSub('report-view');
+}
+
+/* ---------- Prières ---------- */
+function renderPrayers(){
+  const L = [...db.prayers].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const list = $$('prayersList');
+  if (!L.length) {
+    list.innerHTML = '<div class="empty">Aucune réunion de prière enregistrée.</div>';
+    return;
+  }
+  list.innerHTML = L.map(p => {
+    const checked = p.presentIds || [];
+    const inv = (p.invitesNoms || '').split('\n').filter(s => s.trim()).length;
+    return `<div class="list-item">
+      <div class="top">
+        <span>${esc(p.lieu || 'Réunion de prière')} — ${fmtDate(p.date)}</span>
+        <span class="tag">${checked.length + inv} présents</span>
+      </div>
+      <div class="meta">${p.dirige ? 'Dirigé par : ' + esc(p.dirige) : ''}</div>
+      <div class="actions">
+        <button class="btn ghost sm" data-view-pray="${p.id}">👁️ Voir</button>
+        <button class="btn danger sm" data-del-pray="${p.id}">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-view-pray]').forEach(b => b.onclick = () => openPrayerView(b.dataset.viewPray));
+  list.querySelectorAll('[data-del-pray]').forEach(b => {
+    b.onclick = () => {
+      confirmAction('Supprimer cette réunion ?', () => {
+        db.prayers = db.prayers.filter(x => x.id !== b.dataset.delPray);
+        persist();
+        renderPrayers();
+      });
+    };
+  });
+}
+
+function openPrayerView(id){
+  state.viewingPrayerId = id;
+  const p = db.prayers.find(x => x.id === id);
+  if (!p) return;
+  const checked = p.presentIds || [];
+  const noms = db.members.filter(m => checked.includes(m.id)).map(m => `${memberName(m.id)} (${m.cat})`);
+  const invites = (p.invitesNoms || '').split('\n').map(s => s.trim()).filter(Boolean);
+  $$('prayerViewContent').innerHTML = `
+    <h2>${esc(p.lieu || 'Réunion de prière')} — ${fmtDate(p.date)}</h2>
+    ${p.dirige ? '<p><strong>Dirigé par :</strong> ' + esc(p.dirige) + '</p>' : ''}
+    <p><strong>Effectif total :</strong> ${checked.length + invites.length}</p>
+    <p><strong>Présents :</strong><br>${numbered(noms) || '—'}</p>
+    ${invites.length ? '<p><strong>Invités :</strong><br>' + numbered(invites) + '</p>' : ''}
+  `;
+  showSub('prayer-view');
+}
+
+/* ---------- Jeûne (module encapsulé) ---------- */
+function renderJeune(){
+  if (state.jeuneMounted) return;
+  state.jeuneMounted = true;
+  initJeuneModule($$('jeuneRoot'));
+}
+
+function initJeuneModule(root){
+  const $j = id => document.getElementById(id);
+  const escJ = esc;
+  const uidJ = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const JO = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const MO = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const dc = s => { if (!s) return '—'; const [y,m,d] = s.split('-').map(Number); return `${JO[new Date(y,m-1,d).getDay()]} ${String(d).padStart(2,'0')} ${MO[m-1]} ${y}`; };
+  const fnJ = m => [m.nom, m.pre].filter(Boolean).join(' ') || m.nom || '—';
+
+  const KEY = 'jeune_ahoue_v1';
+  const BUTS = [
+    ['Jeûne pour la Nation','Partiel'],
+    ['Jeûne pour les Dirigeants','Complet'],
+    ['Jeûne pour les Ministres aux Enfants','Complet'],
+    ['Jeûne pour le Renversement des Principautés Personnelles et Familiales','Partiel'],
+    ['Jeûne du Ministère','Complet']
+  ];
+
+  let JDB = { assemblee: "Zone spirituelle d'Attiékoi", jeunes: [], cur: '' };
+  let curTab = 'jeune';
+
+  function jSave(){ try { localStorage.setItem(KEY, JSON.stringify(JDB)); } catch(e){} }
+  function jLoad(){
+    try { const r = localStorage.getItem(KEY); if (r) JDB = Object.assign(JDB, JSON.parse(r)); } catch(e){}
+    if (!JDB.cur && JDB.jeunes.length) JDB.cur = JDB.jeunes[0].id;
+  }
+  function J(){ return JDB.jeunes.find(x => x.id === JDB.cur); }
+
+  function membresJeune(){
+    const asm04 = (db.asm.find(a => /04\s*croix/i.test(a.n)) || {}).id;
+    const pool = asm04 ? db.members.filter(m => m.asm === asm04) : db.members;
+    return pool.length ? pool : db.members;
+  }
+  const it = (f, mid) => f.items[mid] || (f.items[mid] = { i:false, p:f.duree, s:'En cours', j:0 });
+
+  function jGo(){
+    root.innerHTML = jLayout();
+    window.scrollTo(0, 0);
+  }
+
+  function jLayout(){
+    const f = J();
+    const top = `<div class="card">
+      <label>Assemblée du jeûne</label>
+      <input id="jAn" value="${escJ(JDB.assemblee)}" placeholder="Nom de l'assemblée"
+        onchange="JDB.assemblee=this.value.trim();jSave();jGo()">
+      <div class="flex-between" style="margin-top:10px;">
+        <select id="jSel" style="flex:1;" onchange="JDB.cur=this.value;jSave();jGo()">
+          ${JDB.jeunes.length
+            ? JDB.jeunes.map(x => `<option value="${x.id}"${x.id===JDB.cur?' selected':''}>${escJ(x.titre)} (${x.type})</option>`).join('')
+            : '<option value="">— Aucun jeûne —</option>'}
+        </select>
+        <button class="btn sm" data-jact="new" style="margin-left:8px;">+ Nouveau</button>
+      </div>
+    </div>`;
+    const nav = `<div class="tabs" style="background:transparent;padding:0 0 10px;">
+      ${[['jeune','① Jeûne'],['intentions','② Intentions'],['suivi','③ Suivi'],['bilan','④ Bilan'],['membres','👥 Membres']]
+        .map(([k,l]) => `<button class="${curTab===k?'on':''}" data-jtab="${k}" style="background:${curTab===k?'var(--paper)':'#16305f'};color:${curTab===k?'var(--navy)':'var(--gold-light)'};border:1px solid var(--line);">${l}</button>`).join('')}
+    </div>`;
+    let content = '';
+    if (!f && curTab !== 'membres') {
+      content = `<div class="card"><p class="empty">Créez d'abord un jeûne (bouton « + Nouveau »).</p></div>`;
+    } else {
+      content = JVIEWS[curTab](f);
+    }
+    return top + nav + content;
+  }
+
+  const JVIEWS = {
+    jeune(f){
+      return `<div class="card">
+        <h2>① Choisir le type de jeûne</h2>
+        <div class="row">
+          <div><label>But du jeûne</label>
+            <select id="jTitre">
+              ${BUTS.map(b => `<option${f.titre===b[0]?' selected':''}>${escJ(b[0])}</option>`).join('')}
+              <option${BUTS.some(b => b[0]===f.titre)?'':' selected'}>Autre</option>
+            </select>
+          </div>
+          <div><label>Type</label>
+            <select id="jType"><option${f.type==='Complet'?' selected':''}>Complet</option><option${f.type==='Partiel'?' selected':''}>Partiel</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>Durée (jours)</label><input id="jDuree" type="number" min="1" value="${f.duree}"></div>
+          <div><label>Autre but (si « Autre »)</label><input id="jAutre" value="${BUTS.some(b => b[0]===f.titre)?'':escJ(f.titre)}"></div>
+        </div>
+        <div class="row">
+          <div><label>Début</label><input id="jDebut" type="date" value="${f.debut||''}"></div>
+          <div><label>Fin</label><input id="jFin" type="date" value="${f.fin||''}"></div>
+        </div>
+        <p class="text-small text-muted">${dc(f.debut)} → ${dc(f.fin)}</p>
+        <div class="flex-between" style="margin-top:12px;">
+          <button class="btn danger sm" data-jact="del">🗑️ Supprimer</button>
+          <span style="display:flex;gap:8px;">
+            <button class="btn" data-jact="save">💾 Enregistrer</button>
+            <button class="btn ghost" data-jtab="intentions">Suivant →</button>
+          </span>
+        </div>
+      </div>`;
+    },
+    intentions(f){
+      const ms = [...membresJeune()].sort((a,b) => fnJ(a).localeCompare(fnJ(b),'fr'));
+      const n = ms.filter(m => it(f,m.id).i).length;
+      return `<div class="card">
+        <h2>② Intentions de jeûne</h2>
+        <p class="text-small text-muted">${escJ(f.titre)} – ${f.type} – ${f.duree} jours. Cochez les membres engagés.</p>
+        <div class="flex-between" style="margin-bottom:10px;">
+          <div>
+            <button class="btn ghost sm" data-jact="all1">Tout cocher</button>
+            <button class="btn ghost sm" data-jact="all0">Tout décocher</button>
+          </div>
+          <strong>${n} intention(s)</strong>
+        </div>
+        <div class="tw"><table class="grid-table">
+          <thead><tr><th>N°</th><th>Nom et Prénom</th><th>Intention</th><th>Jours prévus</th></tr></thead>
+          <tbody>
+            ${ms.map((m,i) => {
+              const o = it(f,m.id);
+              return `<tr>
+                <td>${i+1}</td>
+                <td>${escJ(fnJ(m))}</td>
+                <td><input type="checkbox"${o.i?' checked':''} data-jset-i="${m.id}"></td>
+                <td><input type="number" min="0" max="${f.duree}" value="${o.p}" data-jset-p="${m.id}" style="width:70px;"></td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="4" class="empty">Aucun membre.</td></tr>'}
+          </tbody>
+        </table></div>
+        <div class="flex-between" style="margin-top:12px;">
+          <span></span>
+          <button class="btn ghost" data-jtab="suivi">Suivant →</button>
+        </div>
+      </div>`;
+    },
+    suivi(f){
+      const ms = membresJeune().filter(m => it(f,m.id).i).sort((a,b) => fnJ(a).localeCompare(fnJ(b),'fr'));
+      return `<div class="card">
+        <h2>③ Suivi du jeûne</h2>
+        <p class="text-small text-muted">Seuls les membres ayant une intention sont listés.</p>
+        <div class="tw"><table class="grid-table">
+          <thead><tr><th>N°</th><th>Nom et Prénom</th><th>Prévus</th><th>Réalisés</th><th>Résultat</th></tr></thead>
+          <tbody>
+            ${ms.map((m,i) => {
+              const o = it(f,m.id);
+              return `<tr>
+                <td>${i+1}</td>
+                <td>${escJ(fnJ(m))}</td>
+                <td>${o.p} j</td>
+                <td><input type="number" min="0" max="${f.duree}" value="${o.j}" data-jset-j="${m.id}" style="width:70px;"></td>
+                <td><select data-jset-s="${m.id}">${['En cours','Terminé','Non terminé'].map(s => `<option${o.s===s?' selected':''}>${s}</option>`).join('')}</select></td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="5" class="empty">Aucune intention (étape ②).</td></tr>'}
+          </tbody>
+        </table></div>
+        <div class="flex-between" style="margin-top:12px;">
+          <span></span>
+          <button class="btn ghost" data-jtab="bilan">Suivant →</button>
+        </div>
+      </div>`;
+    },
+    bilan(f){
+      const B = jBilan(f);
+      return `<div class="card">
+        <h2>④ Bilan du jeûne</h2>
+        <p class="text-small text-muted">
+          ${JDB.assemblee ? 'Assemblée : <strong>' + escJ(JDB.assemblee) + '</strong><br>' : ''}
+          <strong>${escJ(f.titre)}</strong> – ${f.type} – ${f.duree} jours<br>
+          ${dc(f.debut)} → ${dc(f.fin)}
+        </p>
+        <div class="kp">
+          <div><b>${B.n}</b><span>Intentions</span></div>
+          <div><b>${B.ok}</b><span>Terminés</span></div>
+          <div><b>${B.no}</b><span>Non terminés</span></div>
+          <div><b>${B.ec}</b><span>En cours</span></div>
+          <div><b>${B.taux}%</b><span>Taux de réussite</span></div>
+          <div><b>${B.jr}/${B.jp}</b><span>Jours réalisés</span></div>
+        </div>
+        <div class="tw"><table class="grid-table">
+          <thead><tr><th>N°</th><th>Nom</th><th>Prévus</th><th>Réalisés</th><th>Résultat</th></tr></thead>
+          <tbody>
+            ${B.rows.map((r,i) => `<tr>
+              <td>${i+1}</td>
+              <td>${escJ(r[0])}</td>
+              <td>${r[1]}</td>
+              <td>${r[2]}</td>
+              <td style="color:${r[3]==='Terminé'?'var(--ok)':r[3]==='Non terminé'?'var(--danger)':'var(--warn)'};font-weight:bold;">${r[3]}</td>
+            </tr>`).join('') || '<tr><td colspan="5" class="empty">Aucune intention.</td></tr>'}
+          </tbody>
+        </table></div>
+        <div class="flex-between" style="margin-top:12px;">
+          <button class="btn" data-jact="print">🖨️ Imprimer</button>
+          <button class="btn navy" data-jact="pdf">📄 Export PDF</button>
+        </div>
+      </div>`;
+    },
+    membres(){
+      const ms = [...membresJeune()].sort((a,b) => fnJ(a).localeCompare(fnJ(b),'fr'));
+      return `<div class="card">
+        <h2>👥 Membres de l'assemblée</h2>
+        <p class="text-small text-muted">Liste synchronisée avec les membres de l'assemblée 04 Croix de l'application principale.</p>
+        <div class="tw"><table class="grid-table">
+          <thead><tr><th>N°</th><th>Nom</th><th>Catégorie</th><th>Téléphone</th></tr></thead>
+          <tbody>
+            ${ms.map((m,i) => `<tr>
+              <td>${i+1}</td>
+              <td>${escJ(fnJ(m))}</td>
+              <td>${escJ(m.cat || '')}</td>
+              <td>${escJ(m.tel || '')}</td>
+            </tr>`).join('') || '<tr><td colspan="4" class="empty">Aucun membre.</td></tr>'}
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h2>💾 Sauvegarde jeûne</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" data-jact="exp">⬇️ Exporter</button>
+          <button class="btn ghost" data-jact="imp">⬆️ Restaurer</button>
+        </div>
+        <input type="file" id="jFile" accept=".json" style="display:none">
+      </div>`;
+    }
+  };
+
+  function jBilan(f){
+    const ms = membresJeune().filter(m => it(f,m.id).i).sort((a,b) => fnJ(a).localeCompare(fnJ(b),'fr'));
+    const o = m => it(f,m.id);
+    const ok = ms.filter(m => o(m).s === 'Terminé').length;
+    const no = ms.filter(m => o(m).s === 'Non terminé').length;
+    return {
+      n: ms.length, ok, no, ec: ms.length - ok - no,
+      taux: ms.length ? Math.round(ok / ms.length * 100) : 0,
+      jp: ms.reduce((s,m) => s + o(m).p, 0),
+      jr: ms.reduce((s,m) => s + o(m).j, 0),
+      rows: ms.map(m => [fnJ(m), o(m).p + ' j', o(m).j + ' j', o(m).s])
+    };
+  }
+
+  root.addEventListener('click', e => {
+    const t = e.target.closest('[data-jtab],[data-jact]');
+    if (!t) return;
+    if (t.dataset.jtab) { curTab = t.dataset.jtab; jGo(); return; }
+    const f = J();
+    const act = t.dataset.jact;
+    if (act === 'new') {
+      const nj = { id: uidJ(), titre: BUTS[0][0], type: BUTS[0][1], duree: 40, debut:'', fin:'', items:{} };
+      JDB.jeunes.push(nj); JDB.cur = nj.id; curTab = 'jeune'; jSave(); jGo(); return;
+    }
+    if (!f && act !== 'exp' && act !== 'imp') return;
+    if (act === 'save') {
+      f.titre = $j('jTitre').value === 'Autre' ? ($j('jAutre').value.trim() || 'Autre jeûne') : $j('jTitre').value;
+      f.type = $j('jType').value;
+      f.duree = parseInt($j('jDuree').value) || 40;
+      f.debut = $j('jDebut').value;
+      f.fin = $j('jFin').value;
+      jSave(); jGo(); return;
+    }
+    if (act === 'del') {
+      confirmAction('Supprimer ce jeûne et son suivi ?', () => {
+        JDB.jeunes = JDB.jeunes.filter(x => x.id !== JDB.cur);
+        JDB.cur = JDB.jeunes[0] ? JDB.jeunes[0].id : '';
+        jSave(); jGo();
+      });
+      return;
+    }
+    if (act === 'all1' || act === 'all0') {
+      const v = act === 'all1';
+      membresJeune().forEach(m => { it(f,m.id).i = v; });
+      jSave(); jGo(); return;
+    }
+    if (act === 'print') { window.print(); return; }
+    if (act === 'pdf') {
+      loadJsPDF(() => {
+        if (!window.jspdf) return alert('PDF indisponible.');
+        const B = jBilan(f);
+        const doc = new window.jspdf.jsPDF({unit:'mm', format:'a4'});
+        doc.setFontSize(15); doc.setTextColor(10,31,68);
+        doc.text('BILAN DU JEÛNE' + (JDB.assemblee ? ' – ' + JDB.assemblee.toUpperCase() : ''), 105, 16, {align:'center'});
+        doc.setFontSize(11); doc.setTextColor(0);
+        doc.text(`${f.titre} – Jeûne ${f.type} – ${f.duree} jours`, 14, 26);
+        doc.text(`Période : ${dc(f.debut)} au ${dc(f.fin)}`, 14, 32);
+        doc.text(`Intentions : ${B.n} | Terminés : ${B.ok} | Non terminés : ${B.no} | En cours : ${B.ec}`, 14, 39);
+        doc.text(`Taux de réussite : ${B.taux} % | Jours réalisés : ${B.jr} / ${B.jp}`, 14, 45);
+        doc.autoTable({ startY:51, head:[['N°','Nom et Prénom','Prévus','Réalisés','Résultat']], body:B.rows.map((r,i) => [i+1, ...r]), theme:'grid', headStyles:{fillColor:[10,31,68]}, styles:{fontSize:9} });
+        doc.save('bilan_jeune.pdf');
+      });
+      return;
+    }
+    if (act === 'exp') {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(JDB)], {type:'application/json'}));
+      a.download = 'sauvegarde_jeune_' + today() + '.json';
+      a.click(); return;
+    }
+    if (act === 'imp') {
+      const inp = $j('jFile'); if (inp) inp.click(); return;
+    }
+  });
+
+  root.addEventListener('change', e => {
+    const f = J(); if (!f) return;
+    const t = e.target;
+    if (t.dataset.jsetI) { it(f, t.dataset.jsetI).i = t.checked; jSave(); jGo(); }
+    else if (t.dataset.jsetP) { it(f, t.dataset.jsetP).p = parseInt(t.value) || 0; jSave(); }
+    else if (t.dataset.jsetJ) { it(f, t.dataset.jsetJ).j = parseInt(t.value) || 0; jSave(); }
+    else if (t.dataset.jsetS) {
+      const o = it(f, t.dataset.jsetS);
+      o.s = t.value;
+      if (o.s === 'Terminé' && !o.j) o.j = o.p;
+      jSave(); jGo();
+    }
+    else if (t.id === 'jFile' && t.files[0]) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const d = JSON.parse(r.result);
+          if (!d.jeunes) throw 0;
+          confirmAction('Remplacer les données du jeûne ?', () => {
+            JDB = Object.assign(JDB, d);
+            jSave(); jGo();
+            toast('✓ Données du jeûne restaurées');
+          });
+        } catch(err) { alert('Fichier invalide.'); }
+      };
+      r.readAsText(t.files[0]);
+    }
+  });
+
+  jLoad();
+  jGo();
+
+  // Exposition des handlers pour les onchange inline dans le template
+  window.JDB = JDB;
+  window.jSave = jSave;
+  window.jGo = jGo;
+}
+
+/* ---------- Chargement conditionnel de jsPDF ---------- */
+function loadJsPDF(cb){
+  if (window.jspdf) return cb();
+  const s1 = document.createElement('script');
+  s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s1.onload = () => {
+    const s2 = document.createElement('script');
+    s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+    s2.onload = cb;
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+}
+
+/* ---------- Câblage des boutons des modules (cultes, prières, jeûne) ---------- */
+function bindModuleEvents(){
+  // Nouveau compte rendu
+  const btnNewReport = $$('btnNewReport');
+  if (btnNewReport) btnNewReport.onclick = () => openReportForm();
+
+  // Bouton annuler formulaire compte rendu
+  const btnCancelReport = $$('btnCancelReport');
+  if (btnCancelReport) btnCancelReport.onclick = () => go('reports');
+
+  // Enregistrer compte rendu
+  const btnSaveReport = $$('btnSaveReport');
+  if (btnSaveReport) btnSaveReport.onclick = () => {
+    const presentIds = [...$$('presenceGroups').querySelectorAll('input:checked')].map(c => c.dataset.pid);
+    const data = {
+      id: state.editingReportId || uid(),
+      type: 'Culte',
+      date: $$('rDate').value,
+      asm: $$('rAsm').value,
+      coordonnateur: $$('rCoord').value.trim(),
+      theme: $$('rTheme').value.trim(),
+      refTheme: $$('rRefTheme').value.trim(),
+      exhortateur: $$('rExhort').value.trim(),
+      refExhort: $$('rRefExhort').value.trim(),
+      ideePrincipale: $$('rIdee').value.trim(),
+      ministre: $$('rMinistre').value.trim(),
+      refCene: $$('rRefCene').value.trim(),
+      nbCene: +$$('rNbCene').value || 0,
+      presentIds,
+      soulPresentIds: [...($$('soulPresenceGroups')?.querySelectorAll('input:checked')||[])].map(c=>c.dataset.sid),
+      absences: collectAbsences(),
+      invitesNoms: $$('rInvitesNoms').value,
+      dimes: +$$('rDimes').value || 0,
+      offrande: +$$('rOffrande').value || 0,
+      baptises: $$('rBaptises').value,
+      brisement: $$('rBrisement').value,
+    };
+    if (!data.date || !data.asm) { alert('Date et assemblée requises.'); return; }
+    const i = db.reports.findIndex(x => x.id === data.id);
+    if (i > -1) db.reports[i] = data; else db.reports.push(data);
+    const reportDay=new Date(data.date+'T12:00:00Z');
+    if(reportDay.getUTCDay()===0){
+      for(const sid of data.soulPresentIds){
+        const soul=db.souls.find(x=>x.id===sid && x.asm===data.asm);
+        if(soul){soul.sundayAttendance=soul.sundayAttendance||[];if(!soul.sundayAttendance.includes(data.date))soul.sundayAttendance.push(data.date);soul.sundayAttendance.sort();autoIntegrateSoul(soul);}
+      }
+    }
+    persist();
+    toast('✓ Compte rendu enregistré');
+    go('reports');
+  };
+
+  // Bouton invités → mise à jour compteurs
+  const invNoms = $$('rInvitesNoms');
+  if (invNoms) invNoms.oninput = updateCounts;
+
+  // Vue compte rendu
+  const btnBackReportView = $$('btnBackReportView');
+  if (btnBackReportView) btnBackReportView.onclick = () => go('reports');
+  const btnEditReportView = $$('btnEditReportView');
+  if (btnEditReportView) btnEditReportView.onclick = () => {
+    const r = db.reports.find(x => x.id === state.viewingReportId);
+    if (r) openReportForm(r);
+  };
+  const btnPrintReportView = $$('btnPrintReportView');
+  if (btnPrintReportView) btnPrintReportView.onclick = () => window.print();
+
+  // Nouvelle prière
+  const btnNewPrayer = $$('btnNewPrayer');
+  if (btnNewPrayer) btnNewPrayer.onclick = () => {
+    state.editingPrayerId = null;
+    $$('pDate').value = today();
+    $$('pLieu').value = '';
+    $$('pDirige').value = '';
+    $$('pInvitesNoms').value = '';
+    renderPresenceGroups('prayerPresenceGroups', []);
+    $$('prayerFormTitle').textContent = 'Réunion de prière';
+    showSub('prayer-form');
+  };
+
+  const btnCancelPrayer = $$('btnCancelPrayer');
+  if (btnCancelPrayer) btnCancelPrayer.onclick = () => go('prayers');
+
+  const btnSavePrayer = $$('btnSavePrayer');
+  if (btnSavePrayer) btnSavePrayer.onclick = () => {
+    const presentIds = [...$$('prayerPresenceGroups').querySelectorAll('input:checked')].map(c => c.dataset.pid);
+    const data = {
+      id: state.editingPrayerId || uid(),
+      date: $$('pDate').value,
+      lieu: $$('pLieu').value.trim(),
+      dirige: $$('pDirige').value.trim(),
+      presentIds,
+      invitesNoms: $$('pInvitesNoms').value
+    };
+    if (!data.date) { alert('Date requise.'); return; }
+    const i = db.prayers.findIndex(x => x.id === data.id);
+    if (i > -1) db.prayers[i] = data; else db.prayers.push(data);
+    persist();
+    toast('✓ Réunion enregistrée');
+    go('prayers');
+  };
+
+  // Vue prière
+  const btnBackPrayerView = $$('btnBackPrayerView');
+  if (btnBackPrayerView) btnBackPrayerView.onclick = () => go('prayers');
+  const btnPrintPrayer = $$('btnPrintPrayer');
+  if (btnPrintPrayer) btnPrintPrayer.onclick = () => window.print();
+
+  // Bouton imprimer comptes rendus
+  const btnPrintReports = $$('btnPrintReports');
+  if (btnPrintReports) btnPrintReports.onclick = () => {
+    const tbl = $$('reportsPrintTable');
+    if (!tbl) return;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write('<html><head><title>Comptes rendus</title><style>body{font-family:Georgia,serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #999;padding:6px;font-size:12pt;}th{background:#0a1f44;color:#e8d28a;}</style></head><body>');
+    w.document.write('<h2>' + db.zone + '</h2>');
+    w.document.write('<table>' + tbl.innerHTML + '</table>');
+    w.document.write('</body></html>');
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 300);
+  };
+}
+
+/* ---------- Injection du seed + init des modules ---------- */
+init();
+(function bootstrapModules(){
+  // Si la base est vide (premier lancement), injecter le seed
+  if (!db.members.length && typeof SEED_MEMBERS !== 'undefined') {
+    SEED_MEMBERS.forEach((m, i) => {
+      db.members.push(Object.assign({
+        id: 'm_' + i,
+        code: '',
+        nom: '',
+        pre: '',
+        cat: 'Adulte',
+        tel: '',
+        conv: '',
+        integration: '',
+        asm: 'asm_qg',
+        fd: '',
+        fdTel: '',
+        hist: [],
+      }, m));
+    });
+    persist();
+  }
+
+  // Câbler les boutons des modules
+  bindModuleEvents();
+})();
+
+/* ---------- PWA : installation, hors ligne, stockage durable ---------- */
+(function(){
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+  var evt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault(); evt = e;
+    var b = document.createElement('button');
+    b.className = 'btn'; b.textContent = '📲 Installer l\u2019application';
+    b.style.cssText = 'position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:500;box-shadow:0 4px 14px rgba(0,0,0,.35)';
+    b.onclick = function(){ evt.prompt(); evt.userChoice.finally(function(){ b.remove(); }); };
+    document.body.appendChild(b);
+  });
+})();
+</script>
+
+</body>
+</html>

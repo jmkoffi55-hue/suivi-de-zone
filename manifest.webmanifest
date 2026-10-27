@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Suivi de Zone — CMCI",
+  "short_name": "Suivi de Zone",
+  "description": "Gestion hors ligne des assemblées, membres, rencontres, suivi des âmes et finances.",
+  "lang": "fr-CI",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fdfcf8",
+  "theme_color": "#0a1f44",
+  "categories": ["productivity", "education"] ,
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
